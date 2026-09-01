@@ -1039,3 +1039,79 @@
   loadData();
 
 })();
+const helpButton =
+  document.getElementById(
+    "help-button"
+  );
+
+const helpModal =
+  document.getElementById(
+    "help-modal"
+  );
+
+const helpClose =
+  document.getElementById(
+    "help-close"
+  );
+
+const helpOk =
+  document.getElementById(
+    "help-ok"
+  );
+
+const modalBackdrop =
+  helpModal?.querySelector(
+    ".modal-backdrop"
+  );
+
+
+function openHelp() {
+  helpModal?.classList.remove(
+    "hidden"
+  );
+}
+
+
+function closeHelp() {
+  helpModal?.classList.add(
+    "hidden"
+  );
+}
+
+
+helpButton?.addEventListener(
+  "click",
+  openHelp
+);
+
+
+helpClose?.addEventListener(
+  "click",
+  closeHelp
+);
+
+
+helpOk?.addEventListener(
+  "click",
+  closeHelp
+);
+
+
+modalBackdrop?.addEventListener(
+  "click",
+  closeHelp
+);
+
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if (
+      event.key === "Escape"
+    ) {
+      closeHelp();
+    }
+
+  }
+);
