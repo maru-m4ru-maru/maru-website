@@ -2,223 +2,399 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+
   <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>管理者ログイン - maru_m4ru_maru</title>
+  <title>管理画面ログイン - maru_website</title>
 
   <style>
+    :root {
+      --bg: #f3f4f6;
+      --surface: #ffffff;
+      --text: #15171b;
+      --text-soft: #6b727c;
+      --text-muted: #949aa3;
+      --border: #e1e4e8;
+      --border-dark: #d2d6dc;
+      --accent: #111318;
+      --danger: #c84f4f;
+      --success: #168352;
+    }
+
     * {
       box-sizing: border-box;
     }
 
+    html,
     body {
       margin: 0;
+      min-height: 100%;
+    }
+
+    body {
       min-height: 100vh;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      padding: 20px;
+
+      font-family:
+        Inter,
+        ui-sans-serif,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Hiragino Kaku Gothic ProN",
+        "Hiragino Sans",
+        Meiryo,
+        sans-serif;
+
+      background:
+        radial-gradient(
+          circle at top left,
+          rgba(255, 255, 255, 0.95),
+          transparent 38%
+        ),
+        var(--bg);
+
+      color: var(--text);
+
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .login-shell {
+      width: 100%;
+      max-width: 430px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+
+      margin-bottom: 18px;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
 
       display: grid;
       place-items: center;
 
-      background: #f4f7fb;
-      color: #111827;
+      border-radius: 11px;
 
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        "Hiragino Sans",
-        Meiryo,
-        sans-serif;
+      background: var(--accent);
+      color: white;
+
+      font-size: 14px;
+      font-weight: 900;
     }
 
-    .box {
-      width: min(
-        calc(100% - 28px),
-        420px
-      );
+    .brand-name {
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
 
-      padding: 30px;
+    .login-card {
+      padding: 26px;
 
-      border:
-        1px solid
-        #e0e6ee;
+      border: 1px solid var(--border);
+      border-radius: 18px;
 
-      border-radius: 16px;
-
-      background: white;
+      background: rgba(255, 255, 255, 0.96);
 
       box-shadow:
-        0 14px 40px
-        rgba(20, 35, 55, .08);
+        0 20px 60px rgba(15, 20, 30, 0.08);
+    }
+
+    .kicker {
+      margin-bottom: 7px;
+
+      color: var(--text-muted);
+
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.14em;
     }
 
     h1 {
-      margin: 0 0 7px;
+      margin: 0;
 
-      font-size: 26px;
+      font-size: 27px;
+      line-height: 1.15;
+
+      letter-spacing: -0.045em;
     }
 
     .description {
-      margin: 0 0 24px;
+      margin: 9px 0 22px;
 
-      color: #6f7a89;
+      color: var(--text-soft);
 
-      font-size: 13px;
+      font-size: 11px;
+      line-height: 1.75;
     }
 
     .field {
-      margin-bottom: 14px;
+      margin-bottom: 13px;
     }
 
-    label {
+    .field label {
       display: block;
 
       margin-bottom: 6px;
 
-      font-size: 12px;
-      font-weight: 800;
+      color: var(--text-soft);
+
+      font-size: 9px;
+      font-weight: 900;
+      letter-spacing: 0.04em;
     }
 
-    input {
+    .field input {
       width: 100%;
-      height: 44px;
 
-      padding:
-        0
-        12px;
+      padding: 11px 12px;
 
-      border:
-        1px solid
-        #d8e0e9;
-
+      border: 1px solid var(--border-dark);
       border-radius: 9px;
 
       outline: none;
 
-      background: #fbfcfe;
+      background: white;
+      color: var(--text);
 
-      font: inherit;
+      font-size: 12px;
+
+      transition:
+        border-color 0.18s ease,
+        box-shadow 0.18s ease;
     }
 
-    input:focus {
-      border-color: #1689d8;
+    .field input:focus {
+      border-color: #969da7;
 
       box-shadow:
-        0 0 0 3px
-        rgba(22, 137, 216, .1);
+        0 0 0 3px rgba(17, 19, 24, 0.05);
     }
 
-    button {
+    .login-button {
       width: 100%;
-      height: 44px;
+
+      min-height: 42px;
 
       margin-top: 5px;
 
       border: 0;
       border-radius: 9px;
 
-      background: #1689d8;
+      background: var(--accent);
       color: white;
 
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 800;
 
-      cursor: pointer;
+      transition:
+        transform 0.18s ease,
+        background 0.18s ease,
+        opacity 0.18s ease;
     }
 
-    button:disabled {
-      opacity: .6;
+    .login-button:hover {
+      background: #25282e;
+      transform: translateY(-1px);
+    }
+
+    .login-button:disabled {
       cursor: not-allowed;
+      opacity: 0.65;
+      transform: none;
     }
 
-    #message {
-      min-height: 20px;
+    .message {
+      min-height: 18px;
 
       margin-top: 12px;
 
-      color: #d33;
+      font-size: 10px;
+      line-height: 1.5;
+      text-align: center;
+    }
 
-      font-size: 12px;
-      font-weight: 700;
+    .message.error {
+      color: var(--danger);
+    }
+
+    .message.success {
+      color: var(--success);
+    }
+
+    .login-footer {
+      margin-top: 15px;
+
+      color: var(--text-muted);
+
+      font-size: 9px;
+      line-height: 1.6;
 
       text-align: center;
     }
 
-    .back {
-      display: block;
+    .status-line {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
 
-      margin-top: 18px;
+      margin-top: 15px;
 
-      color: #7a8594;
+      color: var(--text-muted);
 
-      font-size: 11px;
+      font-size: 9px;
+    }
 
-      text-align: center;
+    .status-dot {
+      width: 6px;
+      height: 6px;
+
+      border-radius: 50%;
+
+      background: var(--success);
+
+      box-shadow:
+        0 0 0 4px rgba(22, 131, 82, 0.09);
+    }
+
+    @media (max-width: 480px) {
+      .login-card {
+        padding: 21px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
     }
   </style>
 </head>
 
 <body>
 
-  <main class="box">
+  <main class="login-shell">
 
-    <h1>管理者ログイン</h1>
+    <div class="brand">
+      <div class="brand-mark">M</div>
 
-    <p class="description">
-      maru_m4ru_maru 公式サイト
-    </p>
+      <div class="brand-name">
+        maru_website
+      </div>
+    </div>
 
-    <form id="login-form">
 
-      <div class="field">
-        <label for="password1">
-          パスワード1
-        </label>
+    <section class="login-card">
 
-        <input
-          id="password1"
-          type="password"
-          autocomplete="off"
-          required
-        >
+      <div class="kicker">
+        ADMIN PANEL
       </div>
 
-      <div class="field">
-        <label for="password2">
-          パスワード2
-        </label>
+      <h1>
+        管理画面にログイン
+      </h1>
 
-        <input
-          id="password2"
-          type="password"
-          autocomplete="off"
-          required
+      <p class="description">
+        サイトの内容を編集するには、
+        2つのパスワードを入力してください。
+      </p>
+
+
+      <form id="loginForm">
+
+        <div class="field">
+
+          <label for="password1">
+            パスワード 1
+          </label>
+
+          <input
+            id="password1"
+            name="password1"
+            type="password"
+            autocomplete="current-password"
+            placeholder="パスワードを入力"
+            required
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="password2">
+            パスワード 2
+          </label>
+
+          <input
+            id="password2"
+            name="password2"
+            type="password"
+            autocomplete="current-password"
+            placeholder="パスワードを入力"
+            required
+          >
+
+        </div>
+
+
+        <button
+          id="loginButton"
+          type="submit"
+          class="login-button"
         >
+          ログイン
+        </button>
+
+      </form>
+
+
+      <div
+        id="loginMessage"
+        class="message"
+        aria-live="polite"
+      ></div>
+
+
+      <div class="status-line">
+        <span class="status-dot"></span>
+        管理システム ONLINE
       </div>
 
-      <button
-        id="login-button"
-        type="submit"
-      >
-        ログイン
-      </button>
+    </section>
 
-      <div id="message"></div>
 
-    </form>
-
-    <a
-      class="back"
-      href="../"
-    >
-      ← ホームページへ戻る
-    </a>
+    <div class="login-footer">
+      管理権限がない場合はログインできません。
+    </div>
 
   </main>
 
-  <script src="admin.js"></script>
+
+  <script src="./login.js"></script>
 
 </body>
 </html>
