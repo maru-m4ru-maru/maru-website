@@ -1,1 +1,362 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+  <title>まる - Official Website</title>
+  <meta
+    name="description"
+    content="まるの公式ホームページ。Scratch向けツールやWebサービスなどを開発しています。"
+  >
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+
+      <a href="#top" class="logo-link">
+        <div class="logo-mark">ま</div>
+        <div class="logo-text">
+          <span class="logo-main">まる</span>
+          <span class="logo-sub">OFFICIAL WEBSITE</span>
+        </div>
+      </a>
+
+      <nav class="nav">
+        <a href="#about">About</a>
+        <a href="#projects">Projects</a>
+        <a href="#updates">Updates</a>
+      </nav>
+
+      <button
+        id="theme-toggle"
+        class="theme-button"
+        type="button"
+        aria-label="テーマを切り替える"
+      >
+        ☀
+      </button>
+
+    </div>
+  </header>
+
+
+  <main id="top">
+
+    <!-- HERO -->
+    <section class="hero">
+
+      <div class="hero-glow glow-one"></div>
+      <div class="hero-glow glow-two"></div>
+
+      <div class="hero-content">
+
+        <div class="hero-badge">
+          <span class="status-dot"></span>
+          ONLINE
+        </div>
+
+        <h1>
+          Scratchを、<br>
+          <span>もっと面白く。</span>
+        </h1>
+
+        <p class="hero-description">
+          便利なツールやWebサービスを作っている<br>
+          「まる」の公式ホームページです。
+        </p>
+
+        <div class="hero-buttons">
+          <a href="#projects" class="button button-primary">
+            プロジェクトを見る
+          </a>
+
+          <a
+            href="https://github.com/maru-m4ru-maru"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="button button-secondary"
+          >
+            GitHub
+          </a>
+        </div>
+
+      </div>
+
+      <div class="hero-scroll">
+        <span>SCROLL</span>
+        <div class="scroll-line"></div>
+      </div>
+
+    </section>
+
+
+    <!-- ABOUT -->
+    <section id="about" class="section">
+
+      <div class="section-heading">
+        <span class="section-number">01</span>
+        <div>
+          <p class="section-label">ABOUT</p>
+          <h2>まるについて</h2>
+        </div>
+      </div>
+
+      <div class="about-grid">
+
+        <div class="about-card large-card">
+          <div class="card-icon">◎</div>
+
+          <h3>ものづくり</h3>
+
+          <p>
+            ScratchやWeb技術を使って、
+            「こんなのあったら便利そう」という
+            アイデアを形にしています。
+          </p>
+        </div>
+
+        <div class="about-card">
+          <div class="card-icon">⌁</div>
+
+          <h3>シンプルに</h3>
+
+          <p>
+            できるだけ分かりやすく、
+            誰でも使いやすいサービスを目指しています。
+          </p>
+        </div>
+
+        <div class="about-card">
+          <div class="card-icon">+</div>
+
+          <h3>挑戦する</h3>
+
+          <p>
+            新しい技術やアイデアにも
+            どんどん挑戦していきます。
+          </p>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- PROJECTS -->
+    <section id="projects" class="section projects-section">
+
+      <div class="section-heading">
+        <span class="section-number">02</span>
+        <div>
+          <p class="section-label">PROJECTS</p>
+          <h2>プロジェクト</h2>
+        </div>
+      </div>
+
+      <div class="projects-list">
+
+        <!-- MARU ADDONS -->
+        <article class="project-card featured">
+
+          <div class="project-top">
+            <div class="project-type">
+              FEATURED PROJECT
+            </div>
+
+            <div class="project-version">
+              v1.4.5
+            </div>
+          </div>
+
+          <div class="project-content">
+
+            <div>
+              <h3>まる Addons</h3>
+
+              <p>
+                Scratchをもっと便利にするための
+                ツールセット。
+                ブロック数表示、FPS表示、非共有機能、
+                60FPSモードなどを搭載しています。
+              </p>
+
+              <div class="project-tags">
+                <span>Scratch</span>
+                <span>JavaScript</span>
+                <span>Tool</span>
+              </div>
+            </div>
+
+            <div class="project-actions">
+              <a
+                href="https://github.com/maru-m4ru-maru/maru-addons"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="button button-primary"
+              >
+                GitHub
+              </a>
+            </div>
+
+          </div>
+
+        </article>
+
+
+        <!-- FUTURE PROJECT -->
+        <article class="project-card">
+
+          <div class="project-top">
+            <div class="project-type">
+              MORE PROJECTS
+            </div>
+          </div>
+
+          <div class="project-content">
+
+            <div>
+              <h3>Coming Soon</h3>
+
+              <p>
+                新しいプロジェクトを準備中です。
+                これからもいろいろなツールや
+                サービスを追加していきます。
+              </p>
+            </div>
+
+          </div>
+
+        </article>
+
+      </div>
+
+    </section>
+
+
+    <!-- UPDATES -->
+    <section id="updates" class="section">
+
+      <div class="section-heading">
+        <span class="section-number">03</span>
+        <div>
+          <p class="section-label">UPDATES</p>
+          <h2>最新情報</h2>
+        </div>
+      </div>
+
+      <div class="updates-list">
+
+        <article class="update-item">
+          <div class="update-date">
+            2026.09.02
+          </div>
+
+          <div class="update-content">
+            <span class="update-tag">まる Addons</span>
+
+            <h3>
+              v1.4.5 を公開
+            </h3>
+
+            <p>
+              60FPS機能を追加し、
+              ホーム画面の表示を整理しました。
+            </p>
+          </div>
+        </article>
+
+
+        <article class="update-item">
+          <div class="update-date">
+            2026.09.01
+          </div>
+
+          <div class="update-content">
+            <span class="update-tag">Website</span>
+
+            <h3>
+              公式ホームページ制作開始
+            </h3>
+
+            <p>
+              まるの公式ホームページを
+              GitHub Pagesで制作開始しました。
+            </p>
+          </div>
+        </article>
+
+      </div>
+
+    </section>
+
+
+    <!-- CTA -->
+    <section class="cta-section">
+
+      <div class="cta-box">
+
+        <div>
+          <p class="section-label">STAY TUNED</p>
+
+          <h2>
+            これからも<br>
+            <span>いろいろ作ります。</span>
+          </h2>
+        </div>
+
+        <a
+          href="https://github.com/maru-m4ru-maru"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="button button-primary"
+        >
+          GitHubを見る
+        </a>
+
+      </div>
+
+    </section>
+
+  </main>
+
+
+  <footer class="footer">
+
+    <div class="footer-inner">
+
+      <div>
+        <div class="footer-logo">
+          まる
+        </div>
+
+        <p>
+          Official Website
+        </p>
+      </div>
+
+      <div class="footer-links">
+        <a href="#top">Top</a>
+        <a href="#about">About</a>
+        <a href="#projects">Projects</a>
+        <a href="#updates">Updates</a>
+      </div>
+
+    </div>
+
+    <div class="footer-bottom">
+      <span>© 2026 Maru</span>
+      <span>Made with HTML / CSS / JavaScript</span>
+    </div>
+
+  </footer>
+
+
+  <script src="main.js"></script>
+
+</body>
+</html>
