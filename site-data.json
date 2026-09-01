@@ -56,7 +56,7 @@
     {
       "id": "stat-status",
       "label": "Status",
-      "value": "Building",
+      "value": "ONLINE",
       "meta": "Always improving",
       "enabled": true
     }
@@ -67,7 +67,7 @@
       "id": "project-addons",
       "title": "まる Addons",
       "description": "Scratch / TurboWarp をより便利にするためのツール。",
-      "status": "Active",
+      "status": "ONLINE",
       "tags": [
         "Scratch",
         "JavaScript",
@@ -83,7 +83,7 @@
       "id": "project-hub",
       "title": "Project Hub",
       "description": "Scratchユーザー向けの共同制作プラットフォーム。",
-      "status": "In Development",
+      "status": "DEVELOPING",
       "tags": [
         "TurboWarp",
         "React",
@@ -99,7 +99,7 @@
       "id": "project-webviewer",
       "title": "Web Viewer",
       "description": "Webコンテンツをより柔軟に扱うためのツールプロジェクト。",
-      "status": "Prototype",
+      "status": "BETA",
       "tags": [
         "JavaScript",
         "Cloudflare",
