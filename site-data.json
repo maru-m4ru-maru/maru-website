@@ -63,7 +63,7 @@
     {
       "id": "project-addons",
       "title": "まる Addons",
-      "description": "Scratch / TurboWarp をより便利にするためのツール。",
+      "description": "Scratch / TurboWarp をより便利にするためのツールです",
       "status": "ONLINE",
       "tags": [
         "Scratch",
@@ -74,38 +74,6 @@
       "github": "https://github.com/maru-m4ru-maru/maru-addons",
       "icon": "MA",
       "featured": true,
-      "enabled": true
-    },
-    {
-      "id": "project-hub",
-      "title": "Project Hub",
-      "description": "Scratchユーザー向けの共同制作プラットフォーム。",
-      "status": "DEVELOPING",
-      "tags": [
-        "TurboWarp",
-        "React",
-        "Supabase"
-      ],
-      "url": "",
-      "github": "",
-      "icon": "PH",
-      "featured": false,
-      "enabled": true
-    },
-    {
-      "id": "project-webviewer",
-      "title": "Web Viewer",
-      "description": "Webコンテンツをより柔軟に扱うためのツールプロジェクト。",
-      "status": "BETA",
-      "tags": [
-        "JavaScript",
-        "Cloudflare",
-        "Web"
-      ],
-      "url": "",
-      "github": "",
-      "icon": "WV",
-      "featured": false,
       "enabled": true
     }
   ],
@@ -120,8 +88,25 @@
       "enabled": true
     }
   ],
-  "embeds": [],
-  "links": [],
+  "embeds": [
+    {
+      "id": "embed-mtjbshb0-w6ihob",
+      "title": "新しい埋め込み",
+      "url": "",
+      "width": "100%",
+      "height": "420",
+      "enabled": true
+    }
+  ],
+  "links": [
+    {
+      "id": "link-mtjbrnf6-pwj3mg",
+      "label": "Scratchのプロフィールです。",
+      "url": "https://scratch.mit.edu/users/maru_m4ru_maru/",
+      "newTab": true,
+      "enabled": true
+    }
+  ],
   "sections": [
     {
       "id": "section-hero",
