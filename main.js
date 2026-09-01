@@ -1,195 +1,337 @@
-(() => {
-  "use strict";
+const SITE_DATA_URL = "./site-data.json";
 
-  const DATA_URL = "./site-data.json";
-
-  const AVATAR_URL =
-    "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png";
+const DEFAULT_AVATAR =
+  "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png";
 
 
-  async function loadSiteData() {
-    try {
-      const response = await fetch(
-        `${DATA_URL}?cb=${Date.now()}`,
-        {
-          cache: "no-store"
-        }
-      );
+function setText(selector, value) {
+  const elements = document.querySelectorAll(selector);
 
-      if (!response.ok) {
-        throw new Error(
-          `site-data.json の読み込みに失敗しました: HTTP ${response.status}`
-        );
-      }
+  elements.forEach((element) => {
+    element.textContent = value;
+  });
+}
 
-      const data = await response.json();
 
-      applySiteData(data);
+function setAttribute(selector, attribute, value) {
+  const elements = document.querySelectorAll(selector);
 
-      console.log(
-        "[Maru Website] site-data.json を読み込みました",
-        data
-      );
+  elements.forEach((element) => {
+    element.setAttribute(attribute, value);
+  });
+}
 
-    } catch (error) {
 
-      console.error(
-        "[Maru Website]",
-        error
-      );
-
-    }
+function normalizeVersion(version) {
+  if (!version) {
+    return "";
   }
 
+  const value = String(version).trim();
 
-  function applySiteData(data) {
+  if (value.startsWith("v")) {
+    return value;
+  }
 
-    setText(
-      "[data-site-name]",
-      data.siteName
+  return `v${value}`;
+}
+
+
+async function loadSiteData() {
+  try {
+    const cacheBuster = `cb=${Date.now()}`;
+
+    const response = await fetch(
+      `${SITE_DATA_URL}?${cacheBuster}`,
+      {
+        cache: "no-store"
+      }
     );
 
+    if (!response.ok) {
+      throw new Error(
+        `site-data.json returned ${response.status}`
+      );
+    }
 
-    setText(
-      "[data-tagline]",
-      data.tagline
-    );
+    const data = await response.json();
+
+    const siteName =
+      data.siteName ||
+      "maru_m4ru_maru";
+
+    const tagline =
+      data.tagline ||
+      "ScratchやWebを、もっと便利に。";
+
+    const description =
+      data.description ||
+      "maru_m4ru_maru が制作しているツール・サービス・プロジェクトを紹介しています。";
+
+    const addonsVersion =
+      normalizeVersion(data.addonsVersion) ||
+      "v1.4.5";
+
+    const addonsUpdate =
+      data.addonsUpdate ||
+      "最新アップデート情報";
+
+    const updateDate =
+      data.updateDate ||
+      "—";
 
 
-    setText(
-      "[data-description]",
-      data.description
-    );
+    /* =========================
+       BASIC SITE DATA
+    ========================== */
 
+    setText("[data-site-name]", siteName);
+
+    setText("[data-tagline]", tagline);
+
+    setText("[data-description]", description);
 
     setText(
       "[data-addons-version]",
-      `v${data.addonsVersion}`
+      addonsVersion
     );
-
 
     setText(
       "[data-addons-update]",
-      data.addonsUpdate
+      addonsUpdate
     );
-
 
     setText(
       "[data-update-date]",
-      data.updateDate
+      updateDate
     );
 
 
-    document
-      .querySelectorAll("[data-avatar]")
-      .forEach(element => {
+    /* =========================
+       AVATAR
+    ========================== */
 
-        element.src = AVATAR_URL;
-
-      });
-
-
-    const updateTime =
-      document.querySelector(
-        "[data-update-date]"
-      );
+    setAttribute(
+      "[data-avatar]",
+      "src",
+      DEFAULT_AVATAR
+    );
 
 
-    if (updateTime) {
-      updateTime.setAttribute(
-        "datetime",
-        convertDate(data.updateDate)
-      );
-    }
+    setAttribute(
+      "[data-avatar]",
+      "alt",
+      siteName
+    );
 
+
+    /* =========================
+       PAGE TITLE
+    ========================== */
 
     document.title =
-      `${data.siteName} - Official Website`;
-  }
+      `${siteName} - Official Website`;
 
 
-  function setText(
-    selector,
-    value
-  ) {
+    /* =========================
+       META DESCRIPTION
+    ========================== */
 
-    if (
-      typeof value !== "string"
-    ) {
-      return;
-    }
-
-
-    document
-      .querySelectorAll(selector)
-      .forEach(element => {
-
-        element.textContent =
-          value;
-
-      });
-  }
-
-
-  function convertDate(value) {
-
-    if (
-      typeof value !== "string"
-    ) {
-      return "";
-    }
-
-
-    const match =
-      value.match(
-        /^(\d{4})[./-](\d{1,2})[./-](\d{1,2})$/
+    const metaDescription =
+      document.querySelector(
+        'meta[name="description"]'
       );
 
-
-    if (!match) {
-      return "";
+    if (metaDescription) {
+      metaDescription.setAttribute(
+        "content",
+        description
+      );
     }
 
 
-    const year =
-      match[1];
+    console.log(
+      "[maru-website] site data loaded",
+      data
+    );
 
-    const month =
-      match[2].padStart(2, "0");
+  } catch (error) {
 
-    const day =
-      match[3].padStart(2, "0");
+    console.warn(
+      "[maru-website] Failed to load site-data.json",
+      error
+    );
 
-
-    return `${year}-${month}-${day}`;
+    /*
+      固定のHTML内容をそのまま使用するため、
+      エラーでもページ自体は表示されます。
+    */
   }
+}
 
 
-  function setupCurrentYear() {
+/* =========================
+   CURRENT YEAR
+========================= */
 
-    const elements =
-      document.querySelectorAll(
-        "[data-current-year]"
-      );
+function setCurrentYear() {
+  setText(
+    "[data-current-year]",
+    new Date().getFullYear()
+  );
+}
 
 
-    const year =
-      new Date().getFullYear();
+/* =========================
+   LINK BEHAVIOR
+========================= */
 
+function setupSmoothLinks() {
+  const links =
+    document.querySelectorAll(
+      'a[href^="#"]'
+    );
 
-    elements.forEach(
-      element => {
+  links.forEach((link) => {
 
-        element.textContent =
-          `© ${year} maru_m4ru_maru`;
+    link.addEventListener(
+      "click",
+      (event) => {
+
+        const targetId =
+          link.getAttribute("href");
+
+        if (!targetId || targetId === "#") {
+          return;
+        }
+
+        const target =
+          document.querySelector(targetId);
+
+        if (!target) {
+          return;
+        }
+
+        event.preventDefault();
+
+        target.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
 
       }
     );
+
+  });
+}
+
+
+/* =========================
+   SUBTLE REVEAL
+========================= */
+
+function setupReveal() {
+  const elements =
+    document.querySelectorAll(
+      ".stat-card, .project-card, .featured-card, .update-card, .github-card"
+    );
+
+  if (!("IntersectionObserver" in window)) {
+    return;
   }
 
+  elements.forEach((element) => {
+    element.style.opacity = "0";
+    element.style.transform = "translateY(10px)";
+    element.style.transition =
+      "opacity 0.45s ease, transform 0.45s ease";
+  });
 
-  loadSiteData();
 
-  setupCurrentYear();
+  const observer =
+    new IntersectionObserver(
+      (entries) => {
 
-})();
+        entries.forEach((entry) => {
+
+          if (!entry.isIntersecting) {
+            return;
+          }
+
+          entry.target.style.opacity = "1";
+          entry.target.style.transform =
+            "translateY(0)";
+
+          observer.unobserve(entry.target);
+
+        });
+
+      },
+      {
+        threshold: 0.08
+      }
+    );
+
+
+  elements.forEach((element) => {
+    observer.observe(element);
+  });
+}
+
+
+/* =========================
+   IMAGE FALLBACK
+========================= */
+
+function setupImageFallback() {
+  const avatars =
+    document.querySelectorAll(
+      "[data-avatar]"
+    );
+
+  avatars.forEach((avatar) => {
+
+    avatar.addEventListener(
+      "error",
+      () => {
+
+        /*
+          画像が読み込めない場合の
+          最低限のフォールバック。
+        */
+
+        avatar.removeAttribute("src");
+
+        avatar.style.background =
+          "#e8ebef";
+
+      },
+      {
+        once: true
+      }
+    );
+
+  });
+}
+
+
+/* =========================
+   INIT
+========================= */
+
+document.addEventListener(
+  "DOMContentLoaded",
+  async () => {
+
+    setCurrentYear();
+
+    setupSmoothLinks();
+
+    setupReveal();
+
+    setupImageFallback();
+
+    await loadSiteData();
+
+  }
+);
