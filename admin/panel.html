@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
 
@@ -8,7 +8,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>Admin Panel - maru_website</title>
+  <title>管理パネル - maru_website</title>
 
   <link
     rel="stylesheet"
@@ -20,7 +20,7 @@
 
   <div class="app">
 
-    <!-- SIDEBAR -->
+    <!-- サイドバー -->
     <aside class="sidebar">
 
       <div class="sidebar-brand">
@@ -29,9 +29,9 @@
           M
         </div>
 
-        <div>
+        <div class="brand-text">
           <strong>maru_website</strong>
-          <span>Admin Console</span>
+          <span>ADMIN PANEL</span>
         </div>
 
       </div>
@@ -44,79 +44,98 @@
           data-page="overview"
         >
           <span>⌂</span>
-          Overview
+          <b>概要</b>
+          <small>OVERVIEW</small>
         </button>
+
 
         <button
           class="nav-item"
           data-page="site"
         >
           <span>◉</span>
-          Site
+          <b>サイト</b>
+          <small>SITE</small>
         </button>
+
 
         <button
           class="nav-item"
           data-page="pages"
         >
           <span>▣</span>
-          Pages
+          <b>ページ</b>
+          <small>PAGES</small>
         </button>
+
 
         <button
           class="nav-item"
           data-page="sections"
         >
           <span>☷</span>
-          Sections
+          <b>セクション</b>
+          <small>SECTIONS</small>
         </button>
+
 
         <button
           class="nav-item"
           data-page="projects"
         >
           <span>◆</span>
-          Projects
+          <b>プロジェクト</b>
+          <small>PROJECTS</small>
         </button>
+
 
         <button
           class="nav-item"
           data-page="updates"
         >
           <span>↗</span>
-          Updates
+          <b>更新情報</b>
+          <small>UPDATES</small>
         </button>
+
 
         <button
           class="nav-item"
           data-page="links"
         >
           <span>↗</span>
-          Links
+          <b>リンク</b>
+          <small>LINKS</small>
         </button>
+
 
         <button
           class="nav-item"
           data-page="embeds"
         >
           <span>▤</span>
-          Embeds
+          <b>埋め込み</b>
+          <small>EMBEDS</small>
         </button>
+
 
         <button
           class="nav-item"
           data-page="navigation"
         >
           <span>≡</span>
-          Navigation
+          <b>ナビゲーション</b>
+          <small>NAVIGATION</small>
         </button>
+
 
         <button
           class="nav-item"
           data-page="settings"
         >
           <span>⚙</span>
-          Site Settings
+          <b>サイト設定</b>
+          <small>SETTINGS</small>
         </button>
 
       </nav>
@@ -131,11 +150,12 @@
           ? 操作説明
         </button>
 
+
         <button
           id="logoutButton"
           class="sidebar-small-button danger"
         >
-          Log out
+          ↪ ログアウト
         </button>
 
       </div>
@@ -143,13 +163,13 @@
     </aside>
 
 
-    <!-- MAIN -->
+    <!-- メイン -->
     <main class="main">
 
-      <!-- TOPBAR -->
       <header class="topbar">
 
         <div>
+
           <div
             id="pageKicker"
             class="topbar-kicker"
@@ -158,8 +178,9 @@
           </div>
 
           <h1 id="pageTitle">
-            Overview
+            概要
           </h1>
+
         </div>
 
 
@@ -169,14 +190,15 @@
             id="saveState"
             class="save-state saved"
           >
-            Saved
+            保存済み
           </div>
+
 
           <button
             id="saveButton"
             class="button primary"
           >
-            Save Changes
+            保存する
           </button>
 
         </div>
@@ -184,7 +206,6 @@
       </header>
 
 
-      <!-- PAGE CONTENT -->
       <section
         id="pageContent"
         class="page-content"
@@ -193,23 +214,28 @@
     </main>
 
 
-    <!-- LIVE PREVIEW -->
+    <!-- プレビュー -->
     <aside class="preview">
 
       <div class="preview-header">
 
         <div>
-          <strong>Live Preview</strong>
+
+          <strong>
+            ライブプレビュー
+          </strong>
 
           <span>
-            Website
+            LIVE
           </span>
+
         </div>
+
 
         <button
           id="refreshPreviewButton"
           class="icon-button"
-          title="Refresh preview"
+          title="プレビューを更新"
         >
           ↻
         </button>
@@ -231,6 +257,7 @@
 
         </div>
 
+
         <div
           id="previewContent"
           class="preview-content"
@@ -243,7 +270,7 @@
   </div>
 
 
-  <!-- HELP MODAL -->
+  <!-- 操作説明 -->
   <div
     id="helpModal"
     class="modal hidden"
@@ -254,13 +281,17 @@
     <div class="modal-card">
 
       <div class="modal-header">
+
         <div>
+
           <span class="modal-kicker">
             ADMIN GUIDE
           </span>
 
           <h2>操作説明</h2>
+
         </div>
+
 
         <button
           id="closeHelpButton"
@@ -268,66 +299,116 @@
         >
           ×
         </button>
+
       </div>
 
 
       <div class="help-grid">
 
         <div class="help-item">
-          <strong>Pages</strong>
+
+          <strong>
+            サイト
+          </strong>
+
           <p>
-            サイトページの基本構成を管理します。
+            サイト名、説明、アイコン、
+            GitHubリンクなどを変更できます。
           </p>
+
         </div>
 
-        <div class="help-item">
-          <strong>Sections</strong>
-          <p>
-            ホームページ内のセクションを並び替えたり、
-            有効・無効を変更できます。
-          </p>
-        </div>
 
         <div class="help-item">
-          <strong>Projects</strong>
+
+          <strong>
+            セクション
+          </strong>
+
           <p>
-            プロジェクトカードを追加・編集できます。
+            ホームページに表示する
+            セクションを追加・削除・並び替えできます。
           </p>
+
         </div>
 
-        <div class="help-item">
-          <strong>Updates</strong>
-          <p>
-            最新アップデートを追加できます。
-          </p>
-        </div>
 
         <div class="help-item">
-          <strong>Embeds</strong>
+
+          <strong>
+            プロジェクト
+          </strong>
+
           <p>
-            URLを指定してiframeコンテンツを追加できます。
+            プロジェクトカードを自由に追加できます。
           </p>
+
         </div>
 
-        <div class="help-item">
-          <strong>Links</strong>
-          <p>
-            外部リンクやボタン用リンクを管理できます。
-          </p>
-        </div>
 
         <div class="help-item">
-          <strong>Navigation</strong>
+
+          <strong>
+            更新情報
+          </strong>
+
           <p>
-            ヘッダーのナビゲーションを変更できます。
+            アップデート情報を追加・編集できます。
           </p>
+
         </div>
 
+
         <div class="help-item">
-          <strong>Save Changes</strong>
+
+          <strong>
+            リンク
+          </strong>
+
           <p>
-            変更内容をCloudflare Worker経由でGitHubへ保存します。
+            ボタンやリンクとして使うURLを管理できます。
           </p>
+
+        </div>
+
+
+        <div class="help-item">
+
+          <strong>
+            埋め込み
+          </strong>
+
+          <p>
+            URLを指定してiframe形式のコンテンツを追加できます。
+          </p>
+
+        </div>
+
+
+        <div class="help-item">
+
+          <strong>
+            ナビゲーション
+          </strong>
+
+          <p>
+            サイト上部のメニューを変更できます。
+          </p>
+
+        </div>
+
+
+        <div class="help-item">
+
+          <strong>
+            保存
+          </strong>
+
+          <p>
+            保存するとCloudflare Worker経由で
+            GitHubへ反映されます。
+          </p>
+
         </div>
 
       </div>
