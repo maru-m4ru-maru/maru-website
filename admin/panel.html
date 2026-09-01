@@ -9,192 +9,14 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>サイト管理 - maru_m4ru_maru</title>
+  <title>
+    Admin - maru_m4ru_maru
+  </title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: #f4f7fb;
-      color: #111827;
-
-      font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        "Hiragino Sans",
-        Meiryo,
-        sans-serif;
-    }
-
-    .header {
-      height: 62px;
-
-      padding: 0 18px;
-
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-
-      background: #ffffff;
-
-      border-bottom: 1px solid #e1e7ee;
-    }
-
-    .header strong {
-      font-size: 14px;
-    }
-
-    .logout {
-      border: 0;
-      background: transparent;
-
-      color: #687486;
-
-      font-size: 12px;
-      font-weight: 700;
-
-      cursor: pointer;
-    }
-
-    .wrapper {
-      width: min(
-        calc(100% - 28px),
-        900px
-      );
-
-      margin: 30px auto 70px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 28px;
-    }
-
-    .sub {
-      margin: 4px 0 24px;
-
-      color: #6f7a89;
-
-      font-size: 13px;
-    }
-
-    .card {
-      margin-bottom: 14px;
-      padding: 22px;
-
-      background: #ffffff;
-
-      border: 1px solid #e1e7ee;
-      border-radius: 14px;
-    }
-
-    .card h2 {
-      margin: 0 0 16px;
-      font-size: 16px;
-    }
-
-    .field {
-      margin-bottom: 15px;
-    }
-
-    label {
-      display: block;
-
-      margin-bottom: 6px;
-
-      font-size: 12px;
-      font-weight: 800;
-    }
-
-    input,
-    textarea {
-      width: 100%;
-
-      padding: 10px 12px;
-
-      border: 1px solid #d9e1e9;
-      border-radius: 9px;
-
-      background: #fbfcfe;
-      color: #111827;
-
-      font: inherit;
-      outline: none;
-    }
-
-    input {
-      height: 43px;
-    }
-
-    textarea {
-      min-height: 110px;
-      resize: vertical;
-    }
-
-    input:focus,
-    textarea:focus {
-      border-color: #1689d8;
-
-      box-shadow:
-        0 0 0 3px
-        rgba(22, 137, 216, .1);
-    }
-
-    .save {
-      min-height: 43px;
-
-      padding: 0 20px;
-
-      border: 0;
-      border-radius: 9px;
-
-      background: #1689d8;
-      color: #ffffff;
-
-      font-size: 12px;
-      font-weight: 800;
-
-      cursor: pointer;
-    }
-
-    .save:hover {
-      background: #117bbf;
-    }
-
-    .save:disabled {
-      opacity: .6;
-      cursor: not-allowed;
-    }
-
-    .status {
-      min-height: 22px;
-      margin-top: 12px;
-
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .status.success {
-      color: #17834b;
-    }
-
-    .status.error {
-      color: #d13b3b;
-    }
-
-    .note {
-      margin-top: 8px;
-
-      color: #7b8796;
-
-      font-size: 11px;
-      line-height: 1.6;
-    }
-  </style>
+  <link
+    rel="stylesheet"
+    href="admin.css"
+  >
 </head>
 
 <body>
@@ -230,454 +52,770 @@
   </script>
 
 
-  <header class="header">
+  <div class="app">
 
-    <strong>
-      maru_m4ru_maru / 管理画面
-    </strong>
+    <!-- SIDEBAR -->
 
-    <button
-      class="logout"
-      id="logout"
-      type="button"
-    >
-      ログアウト
-    </button>
+    <aside class="sidebar">
 
-  </header>
+      <div class="sidebar-brand">
 
+        <div class="brand-mark">
+          M
+        </div>
 
-  <main class="wrapper">
+        <div>
+          <strong>
+            maru website
+          </strong>
 
-    <h1>
-      サイト管理
-    </h1>
+          <span>
+            Admin Console
+          </span>
+        </div>
 
-    <p class="sub">
-      ここを書き換えて「保存する」を押すだけ。
-    </p>
+      </div>
 
 
-    <section class="card">
+      <nav class="sidebar-nav">
 
-      <h2>
-        基本情報
-      </h2>
-
-      <div class="field">
-
-        <label for="site-name">
-          表示名
-        </label>
-
-        <input
-          id="site-name"
-          type="text"
+        <button
+          class="nav-item active"
+          data-section="overview"
+          type="button"
         >
+          <span class="nav-icon">⌂</span>
+          Overview
+        </button>
 
-      </div>
 
-
-      <div class="field">
-
-        <label for="tagline">
-          キャッチコピー
-        </label>
-
-        <input
-          id="tagline"
-          type="text"
+        <button
+          class="nav-item"
+          data-section="site"
+          type="button"
         >
-
-      </div>
-
-
-      <div class="field">
-
-        <label for="description">
-          説明
-        </label>
-
-        <textarea
-          id="description"
-        ></textarea>
-
-      </div>
-
-    </section>
+          <span class="nav-icon">◼</span>
+          Site
+        </button>
 
 
-    <section class="card">
-
-      <h2>
-        まる Addons
-      </h2>
-
-      <div class="field">
-
-        <label for="addons-version">
-          最新バージョン
-        </label>
-
-        <input
-          id="addons-version"
-          type="text"
+        <button
+          class="nav-item"
+          data-section="addons"
+          type="button"
         >
-
-      </div>
-
-
-      <div class="field">
-
-        <label for="addons-update">
-          最新アップデート
-        </label>
-
-        <textarea
-          id="addons-update"
-        ></textarea>
-
-      </div>
+          <span class="nav-icon">◆</span>
+          Addons
+        </button>
 
 
-      <div class="field">
-
-        <label for="update-date">
-          更新日
-        </label>
-
-        <input
-          id="update-date"
-          type="text"
-          placeholder="2026.09.02"
+        <button
+          class="nav-item"
+          data-section="updates"
+          type="button"
         >
+          <span class="nav-icon">↻</span>
+          Updates
+        </button>
+
+      </nav>
+
+
+      <div class="sidebar-bottom">
+
+        <a
+          href="../"
+          target="_blank"
+          class="sidebar-link"
+        >
+          ↗ サイトを見る
+        </a>
+
+        <button
+          id="logout"
+          class="sidebar-link logout"
+          type="button"
+        >
+          ↪ ログアウト
+        </button>
 
       </div>
 
-    </section>
+    </aside>
 
 
-    <section class="card">
+    <!-- MAIN -->
 
-      <button
-        class="save"
-        id="save"
-        type="button"
+    <main class="main">
+
+      <header class="topbar">
+
+        <div>
+          <h1 id="page-title">
+            Overview
+          </h1>
+
+          <p id="page-description">
+            サイトの状態を確認します。
+          </p>
+        </div>
+
+
+        <div class="topbar-actions">
+
+          <div
+            id="save-indicator"
+            class="save-indicator saved"
+          >
+            <span></span>
+            保存済み
+          </div>
+
+          <button
+            id="save-top"
+            class="primary-button"
+            type="button"
+          >
+            保存する
+          </button>
+
+        </div>
+
+      </header>
+
+
+      <!-- OVERVIEW -->
+
+      <section
+        class="section active"
+        data-content="overview"
       >
-        保存する
-      </button>
 
-      <div
-        class="status"
-        id="status"
-      ></div>
+        <div class="stats-grid">
 
-      <p class="note">
-        保存するとGitHubのsite-data.jsonが更新されます。
-        GitHub Pagesへの反映には少し時間がかかる場合があります。
-      </p>
+          <div class="stat-card">
 
-    </section>
+            <span class="stat-label">
+              SITE
+            </span>
 
-  </main>
+            <strong
+              id="stat-site-name"
+            >
+              —
+            </strong>
 
+            <small>
+              サイト名
+            </small>
 
-  <script>
-    "use strict";
+          </div>
 
-    const WORKER_URL =
-      "https://maru-website-admin.maru-0727.workers.dev";
 
-    const DATA_URL =
-      "../site-data.json";
+          <div class="stat-card">
 
+            <span class="stat-label">
+              ADDONS
+            </span>
 
-    const siteName =
-      document.getElementById(
-        "site-name"
-      );
+            <strong
+              id="stat-version"
+            >
+              —
+            </strong>
 
-    const tagline =
-      document.getElementById(
-        "tagline"
-      );
+            <small>
+              最新バージョン
+            </small>
 
-    const description =
-      document.getElementById(
-        "description"
-      );
+          </div>
 
-    const addonsVersion =
-      document.getElementById(
-        "addons-version"
-      );
 
-    const addonsUpdate =
-      document.getElementById(
-        "addons-update"
-      );
+          <div class="stat-card">
 
-    const updateDate =
-      document.getElementById(
-        "update-date"
-      );
+            <span class="stat-label">
+              UPDATED
+            </span>
 
-    const saveButton =
-      document.getElementById(
-        "save"
-      );
+            <strong
+              id="stat-date"
+            >
+              —
+            </strong>
 
-    const status =
-      document.getElementById(
-        "status"
-      );
+            <small>
+              最終更新日
+            </small>
 
-    const logout =
-      document.getElementById(
-        "logout"
-      );
+          </div>
 
+        </div>
 
-    function showStatus(
-      text,
-      type = ""
-    ) {
-      status.textContent = text;
 
-      status.className =
-        `status ${type}`;
-    }
+        <div class="overview-grid">
 
+          <div class="panel-card">
 
-    async function loadSiteData() {
-      try {
+            <div class="panel-header">
 
-        showStatus(
-          "現在の内容を読み込み中..."
-        );
+              <div>
+                <h2>
+                  クイック編集
+                </h2>
 
-        const response =
-          await fetch(
-            `${DATA_URL}?cb=${Date.now()}`,
-            {
-              cache: "no-store"
-            }
-          );
+                <p>
+                  よく変更する項目だけをここから編集できます。
+                </p>
+              </div>
 
-        if (!response.ok) {
-          throw new Error(
-            `読み込み失敗: HTTP ${response.status}`
-          );
-        }
+            </div>
 
-        const data =
-          await response.json();
 
-        siteName.value =
-          data.siteName || "";
+            <div class="quick-form">
 
-        tagline.value =
-          data.tagline || "";
+              <div class="field">
 
-        description.value =
-          data.description || "";
+                <label for="quick-version">
+                  最新バージョン
+                </label>
 
-        addonsVersion.value =
-          data.addonsVersion || "";
+                <input
+                  id="quick-version"
+                  type="text"
+                >
 
-        addonsUpdate.value =
-          data.addonsUpdate || "";
+              </div>
 
-        updateDate.value =
-          data.updateDate || "";
 
-        showStatus("");
+              <div class="field">
 
-      } catch (error) {
+                <label for="quick-update">
+                  最新アップデート
+                </label>
 
-        console.error(
-          "[Maru Admin]",
-          error
-        );
+                <textarea
+                  id="quick-update"
+                ></textarea>
 
-        showStatus(
-          error.message ||
-          "サイト情報の読み込みに失敗しました",
-          "error"
-        );
-      }
-    }
+              </div>
 
+            </div>
 
-    saveButton.addEventListener(
-      "click",
-      async () => {
+          </div>
 
-        const currentToken =
-          sessionStorage.getItem(
-            "maru_admin_token"
-          );
 
-        if (!currentToken) {
-          window.location.replace(
-            "./"
-          );
+          <div class="preview-card">
 
-          return;
-        }
+            <div class="preview-header">
+              <span>LIVE PREVIEW</span>
+              <span class="preview-dot"></span>
+            </div>
 
+            <div class="mini-preview">
 
-        const siteData = {
-          siteName:
-            siteName.value.trim(),
+              <img
+                src="https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png"
+                alt=""
+              >
 
-          tagline:
-            tagline.value.trim(),
+              <div>
+                <strong
+                  id="preview-site-name"
+                >
+                  maru_m4ru_maru
+                </strong>
 
-          description:
-            description.value.trim(),
+                <p
+                  id="preview-tagline"
+                >
+                  ScratchやWebを、もっと便利に。
+                </p>
+              </div>
 
-          addonsVersion:
-            addonsVersion.value.trim(),
+            </div>
 
-          addonsUpdate:
-            addonsUpdate.value.trim(),
+          </div>
 
-          updateDate:
-            updateDate.value.trim()
-        };
+        </div>
 
+      </section>
 
-        saveButton.disabled =
-          true;
 
-        saveButton.textContent =
-          "保存中...";
+      <!-- SITE -->
 
-        showStatus("");
+      <section
+        class="section"
+        data-content="site"
+      >
 
+        <div class="section-title">
 
-        try {
+          <div>
+            <span>01</span>
 
-          const response =
-            await fetch(
-              `${WORKER_URL}/admin/save`,
-              {
-                method: "POST",
+            <div>
+              <p>SITE</p>
+              <h2>サイト情報</h2>
+            </div>
+          </div>
 
-                headers: {
-                  "Content-Type":
-                    "application/json",
+        </div>
 
-                  "Authorization":
-                    `Bearer ${currentToken}`
-                },
 
-                body:
-                  JSON.stringify({
-                    siteData
-                  })
-              }
-            );
+        <div class="panel-card">
 
+          <div class="panel-header">
 
-          let data = null;
+            <div>
+              <h2>
+                基本情報
+              </h2>
 
-          try {
-            data =
-              await response.json();
-          } catch {
-            data = null;
-          }
+              <p>
+                ホームページ上部やサイト全体で使用される情報です。
+              </p>
+            </div>
 
+          </div>
 
-          if (
-            response.status === 401
-          ) {
-            sessionStorage.removeItem(
-              "maru_admin_token"
-            );
 
-            sessionStorage.removeItem(
-              "maru_admin_expires"
-            );
+          <div class="form-grid">
 
-            alert(
-              "ログインの有効期限が切れました。"
-            );
+            <div class="field full">
 
-            window.location.replace(
-              "./"
-            );
+              <label for="site-name">
+                表示名
+              </label>
 
-            return;
-          }
+              <input
+                id="site-name"
+                type="text"
+                maxlength="100"
+                placeholder="maru_m4ru_maru"
+              >
 
+              <div class="field-meta">
+                <span>
+                  サイト上で使用する名前
+                </span>
 
-          if (
-            !response.ok ||
-            !data?.success
-          ) {
-            throw new Error(
-              data?.message ||
-              `保存に失敗しました (HTTP ${response.status})`
-            );
-          }
+                <span id="site-name-count">
+                  0 / 100
+                </span>
+              </div>
 
+            </div>
 
-          showStatus(
-            "保存しました！",
-            "success"
-          );
 
+            <div class="field full">
 
-        } catch (error) {
+              <label for="tagline">
+                キャッチコピー
+              </label>
 
-          console.error(
-            "[Maru Admin Save]",
-            error
-          );
+              <input
+                id="tagline"
+                type="text"
+                maxlength="200"
+                placeholder="ScratchやWebを、もっと便利に。"
+              >
 
-          showStatus(
-            error.message ||
-            "保存に失敗しました",
-            "error"
-          );
+              <div class="field-meta">
+                <span>
+                  トップページのメインコピー
+                </span>
 
-        } finally {
+                <span id="tagline-count">
+                  0 / 200
+                </span>
+              </div>
 
-          saveButton.disabled =
-            false;
+            </div>
 
-          saveButton.textContent =
-            "保存する";
-        }
-      }
-    );
 
+            <div class="field full">
 
-    logout.addEventListener(
-      "click",
-      () => {
+              <label for="description">
+                サイト説明
+              </label>
 
-        sessionStorage.removeItem(
-          "maru_admin_token"
-        );
+              <textarea
+                id="description"
+                maxlength="1000"
+                placeholder="サイトの説明..."
+              ></textarea>
 
-        sessionStorage.removeItem(
-          "maru_admin_expires"
-        );
+              <div class="field-meta">
+                <span>
+                  サイト紹介文
+                </span>
 
-        window.location.replace(
-          "./"
-        );
-      }
-    );
+                <span id="description-count">
+                  0 / 1000
+                </span>
+              </div>
 
+            </div>
 
-    loadSiteData();
+          </div>
 
-  </script>
+        </div>
+
+      </section>
+
+
+      <!-- ADDONS -->
+
+      <section
+        class="section"
+        data-content="addons"
+      >
+
+        <div class="section-title">
+
+          <div>
+            <span>02</span>
+
+            <div>
+              <p>ADDONS</p>
+              <h2>まる Addons</h2>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="panel-card">
+
+          <div class="panel-header">
+
+            <div>
+              <h2>
+                プロジェクト情報
+              </h2>
+
+              <p>
+                公式サイトに表示するAddonsの情報を編集します。
+              </p>
+            </div>
+
+          </div>
+
+
+          <div class="form-grid">
+
+            <div class="field">
+
+              <label for="addons-version">
+                最新バージョン
+              </label>
+
+              <input
+                id="addons-version"
+                type="text"
+                maxlength="30"
+                placeholder="1.4.5"
+              >
+
+            </div>
+
+
+            <div class="field">
+
+              <label for="update-date">
+                更新日
+              </label>
+
+              <input
+                id="update-date"
+                type="text"
+                maxlength="30"
+                placeholder="2026.09.02"
+              >
+
+            </div>
+
+
+            <div class="field full">
+
+              <label for="addons-update">
+                最新アップデート
+              </label>
+
+              <textarea
+                id="addons-update"
+                maxlength="1000"
+                placeholder="最新バージョンの変更内容..."
+              ></textarea>
+
+              <div class="field-meta">
+
+                <span>
+                  更新内容の説明
+                </span>
+
+                <span id="addons-update-count">
+                  0 / 1000
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="panel-card danger-card">
+
+          <div>
+
+            <h2>
+              Addons GitHub
+            </h2>
+
+            <p>
+              ソースコードや変更履歴はGitHubで管理されています。
+            </p>
+
+          </div>
+
+          <a
+            class="secondary-button"
+            href="https://github.com/maru-m4ru-maru/maru-addons"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHubを開く ↗
+          </a>
+
+        </div>
+
+      </section>
+
+
+      <!-- UPDATES -->
+
+      <section
+        class="section"
+        data-content="updates"
+      >
+
+        <div class="section-title">
+
+          <div>
+
+            <span>03</span>
+
+            <div>
+              <p>UPDATES</p>
+              <h2>更新情報</h2>
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="panel-card">
+
+          <div class="empty-state">
+
+            <div class="empty-icon">
+              +
+            </div>
+
+            <h2>
+              更新履歴
+            </h2>
+
+            <p>
+              更新履歴の管理機能は次のアップデートで追加できます。
+            </p>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- SAVE BAR -->
+
+      <footer class="savebar">
+
+        <div>
+
+          <div
+            id="save-status"
+            class="save-text"
+          >
+            保存済み
+          </div>
+
+          <div
+            id="save-time"
+            class="save-time"
+          >
+            —
+          </div>
+
+        </div>
+
+
+        <div class="save-actions">
+
+          <button
+            id="reset"
+            class="secondary-button"
+            type="button"
+          >
+            変更を戻す
+          </button>
+
+          <button
+            id="save-bottom"
+            class="primary-button"
+            type="button"
+          >
+            保存する
+          </button>
+
+        </div>
+
+      </footer>
+
+    </main>
+
+
+    <!-- RIGHT PREVIEW -->
+
+    <aside class="right-preview">
+
+      <div class="right-preview-header">
+
+        <div>
+          <span>
+            LIVE PREVIEW
+          </span>
+
+          <strong>
+            ホームページ
+          </strong>
+        </div>
+
+        <span
+          id="preview-status"
+          class="preview-status"
+        >
+          LIVE
+        </span>
+
+      </div>
+
+
+      <div class="browser">
+
+        <div class="browser-top">
+
+          <div class="browser-dots">
+            <i></i>
+            <i></i>
+            <i></i>
+          </div>
+
+          <div class="browser-url">
+            maru-m4ru-maru.github.io
+          </div>
+
+        </div>
+
+
+        <div class="browser-page">
+
+          <div class="preview-site-header">
+
+            <img
+              src="https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png"
+              alt=""
+            >
+
+            <strong
+              id="live-name"
+            >
+              maru_m4ru_maru
+            </strong>
+
+          </div>
+
+
+          <div class="preview-hero">
+
+            <small>
+              OFFICIAL WEBSITE
+            </small>
+
+            <h3
+              id="live-tagline"
+            >
+              ScratchやWebを、もっと便利に。
+            </h3>
+
+            <p
+              id="live-description"
+            >
+              maru_m4ru_maru が制作している
+              ツール・サービス・プロジェクトを紹介しています。
+            </p>
+
+          </div>
+
+
+          <div class="preview-addons">
+
+            <div class="preview-tag">
+              Scratch
+            </div>
+
+            <strong>
+              まる Addons
+            </strong>
+
+            <span
+              id="live-version"
+            >
+              v1.4.5
+            </span>
+
+            <p
+              id="live-update"
+            >
+              60FPS機能を追加し、
+              表示を整理しました。
+            </p>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </aside>
+
+  </div>
+
+
+  <div
+    id="toast"
+    class="toast"
+  >
+    保存しました
+  </div>
+
+
+  <script src="admin.js"></script>
 
 </body>
 
