@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
 
@@ -17,7 +18,6 @@
 
     body {
       margin: 0;
-
       background: #f4f7fb;
       color: #111827;
 
@@ -33,19 +33,15 @@
     .header {
       height: 62px;
 
+      padding: 0 18px;
+
       display: flex;
       align-items: center;
       justify-content: space-between;
 
-      padding:
-        0
-        18px;
+      background: #ffffff;
 
-      background: white;
-
-      border-bottom:
-        1px solid
-        #e1e7ee;
+      border-bottom: 1px solid #e1e7ee;
     }
 
     .header strong {
@@ -54,7 +50,6 @@
 
     .logout {
       border: 0;
-
       background: transparent;
 
       color: #687486;
@@ -71,7 +66,7 @@
         900px
       );
 
-      margin: 30px auto;
+      margin: 30px auto 70px;
     }
 
     h1 {
@@ -89,21 +84,16 @@
 
     .card {
       margin-bottom: 14px;
-
       padding: 22px;
 
-      background: white;
+      background: #ffffff;
 
-      border:
-        1px solid
-        #e1e7ee;
-
+      border: 1px solid #e1e7ee;
       border-radius: 14px;
     }
 
     .card h2 {
       margin: 0 0 16px;
-
       font-size: 16px;
     }
 
@@ -124,22 +114,15 @@
     textarea {
       width: 100%;
 
-      padding:
-        10px
-        12px;
+      padding: 10px 12px;
 
-      border:
-        1px solid
-        #d9e1e9;
-
+      border: 1px solid #d9e1e9;
       border-radius: 9px;
 
       background: #fbfcfe;
-
       color: #111827;
 
       font: inherit;
-
       outline: none;
     }
 
@@ -148,8 +131,7 @@
     }
 
     textarea {
-      min-height: 120px;
-
+      min-height: 110px;
       resize: vertical;
     }
 
@@ -165,16 +147,13 @@
     .save {
       min-height: 43px;
 
-      padding:
-        0
-        18px;
+      padding: 0 20px;
 
       border: 0;
-
       border-radius: 9px;
 
       background: #1689d8;
-      color: white;
+      color: #ffffff;
 
       font-size: 12px;
       font-weight: 800;
@@ -182,17 +161,74 @@
       cursor: pointer;
     }
 
+    .save:hover {
+      background: #117bbf;
+    }
+
+    .save:disabled {
+      opacity: .6;
+      cursor: not-allowed;
+    }
+
+    .status {
+      min-height: 22px;
+      margin-top: 12px;
+
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .status.success {
+      color: #17834b;
+    }
+
+    .status.error {
+      color: #d13b3b;
+    }
+
     .note {
-      margin: 10px 0 0;
+      margin-top: 8px;
 
       color: #7b8796;
 
       font-size: 11px;
+      line-height: 1.6;
     }
   </style>
 </head>
 
 <body>
+
+  <script>
+    const token =
+      sessionStorage.getItem(
+        "maru_admin_token"
+      );
+
+    const expires =
+      Number(
+        sessionStorage.getItem(
+          "maru_admin_expires"
+        )
+      );
+
+    if (
+      !token ||
+      !expires ||
+      Date.now() >= expires
+    ) {
+      sessionStorage.removeItem(
+        "maru_admin_token"
+      );
+
+      sessionStorage.removeItem(
+        "maru_admin_expires"
+      );
+
+      window.location.replace("./");
+    }
+  </script>
+
 
   <header class="header">
 
@@ -203,6 +239,7 @@
     <button
       class="logout"
       id="logout"
+      type="button"
     >
       ログアウト
     </button>
@@ -212,16 +249,20 @@
 
   <main class="wrapper">
 
-    <h1>サイト管理</h1>
+    <h1>
+      サイト管理
+    </h1>
 
     <p class="sub">
-      ホームページの情報を編集できます。
+      ここを書き換えて「保存する」を押すだけ。
     </p>
 
 
     <section class="card">
 
-      <h2>基本情報</h2>
+      <h2>
+        基本情報
+      </h2>
 
       <div class="field">
 
@@ -231,7 +272,21 @@
 
         <input
           id="site-name"
-          value="maru_m4ru_maru"
+          type="text"
+        >
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="tagline">
+          キャッチコピー
+        </label>
+
+        <input
+          id="tagline"
+          type="text"
         >
 
       </div>
@@ -243,7 +298,9 @@
           説明
         </label>
 
-        <textarea id="description">ScratchやWebを、もっと便利に。</textarea>
+        <textarea
+          id="description"
+        ></textarea>
 
       </div>
 
@@ -252,17 +309,19 @@
 
     <section class="card">
 
-      <h2>まる Addons</h2>
+      <h2>
+        まる Addons
+      </h2>
 
       <div class="field">
 
-        <label for="version">
+        <label for="addons-version">
           最新バージョン
         </label>
 
         <input
-          id="version"
-          value="1.4.5"
+          id="addons-version"
+          type="text"
         >
 
       </div>
@@ -270,11 +329,28 @@
 
       <div class="field">
 
-        <label for="update">
+        <label for="addons-update">
           最新アップデート
         </label>
 
-        <textarea id="update">60FPS機能を追加し、表示を整理しました。</textarea>
+        <textarea
+          id="addons-update"
+        ></textarea>
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="update-date">
+          更新日
+        </label>
+
+        <input
+          id="update-date"
+          type="text"
+          placeholder="2026.09.02"
+        >
 
       </div>
 
@@ -291,9 +367,14 @@
         保存する
       </button>
 
+      <div
+        class="status"
+        id="status"
+      ></div>
+
       <p class="note">
-        現在は管理画面のUIまで実装されています。
-        保存APIは次の工程で接続します。
+        保存するとGitHubのsite-data.jsonが更新されます。
+        GitHub Pagesへの反映には少し時間がかかる場合があります。
       </p>
 
     </section>
@@ -302,48 +383,302 @@
 
 
   <script>
+    "use strict";
 
-    const auth =
-      sessionStorage.getItem(
-        "maru_admin_authenticated"
+    const WORKER_URL =
+      "https://maru-website-admin.maru-0727.workers.dev";
+
+    const DATA_URL =
+      "../site-data.json";
+
+
+    const siteName =
+      document.getElementById(
+        "site-name"
       );
 
-    if (auth !== "1") {
-      window.location.href = "./";
+    const tagline =
+      document.getElementById(
+        "tagline"
+      );
+
+    const description =
+      document.getElementById(
+        "description"
+      );
+
+    const addonsVersion =
+      document.getElementById(
+        "addons-version"
+      );
+
+    const addonsUpdate =
+      document.getElementById(
+        "addons-update"
+      );
+
+    const updateDate =
+      document.getElementById(
+        "update-date"
+      );
+
+    const saveButton =
+      document.getElementById(
+        "save"
+      );
+
+    const status =
+      document.getElementById(
+        "status"
+      );
+
+    const logout =
+      document.getElementById(
+        "logout"
+      );
+
+
+    function showStatus(
+      text,
+      type = ""
+    ) {
+      status.textContent = text;
+
+      status.className =
+        `status ${type}`;
     }
 
 
-    document
-      .getElementById("logout")
-      .addEventListener(
-        "click",
-        () => {
+    async function loadSiteData() {
+      try {
 
-          sessionStorage.removeItem(
-            "maru_admin_authenticated"
+        showStatus(
+          "現在の内容を読み込み中..."
+        );
+
+        const response =
+          await fetch(
+            `${DATA_URL}?cb=${Date.now()}`,
+            {
+              cache: "no-store"
+            }
           );
 
-          window.location.href =
-            "./";
-
+        if (!response.ok) {
+          throw new Error(
+            `読み込み失敗: HTTP ${response.status}`
+          );
         }
-      );
+
+        const data =
+          await response.json();
+
+        siteName.value =
+          data.siteName || "";
+
+        tagline.value =
+          data.tagline || "";
+
+        description.value =
+          data.description || "";
+
+        addonsVersion.value =
+          data.addonsVersion || "";
+
+        addonsUpdate.value =
+          data.addonsUpdate || "";
+
+        updateDate.value =
+          data.updateDate || "";
+
+        showStatus("");
+
+      } catch (error) {
+
+        console.error(
+          "[Maru Admin]",
+          error
+        );
+
+        showStatus(
+          error.message ||
+          "サイト情報の読み込みに失敗しました",
+          "error"
+        );
+      }
+    }
 
 
-    document
-      .getElementById("save")
-      .addEventListener(
-        "click",
-        () => {
+    saveButton.addEventListener(
+      "click",
+      async () => {
 
-          alert(
-            "保存機能は次の工程で接続します。"
+        const currentToken =
+          sessionStorage.getItem(
+            "maru_admin_token"
           );
 
+        if (!currentToken) {
+          window.location.replace(
+            "./"
+          );
+
+          return;
         }
-      );
+
+
+        const siteData = {
+          siteName:
+            siteName.value.trim(),
+
+          tagline:
+            tagline.value.trim(),
+
+          description:
+            description.value.trim(),
+
+          addonsVersion:
+            addonsVersion.value.trim(),
+
+          addonsUpdate:
+            addonsUpdate.value.trim(),
+
+          updateDate:
+            updateDate.value.trim()
+        };
+
+
+        saveButton.disabled =
+          true;
+
+        saveButton.textContent =
+          "保存中...";
+
+        showStatus("");
+
+
+        try {
+
+          const response =
+            await fetch(
+              `${WORKER_URL}/admin/save`,
+              {
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json",
+
+                  "Authorization":
+                    `Bearer ${currentToken}`
+                },
+
+                body:
+                  JSON.stringify({
+                    siteData
+                  })
+              }
+            );
+
+
+          let data = null;
+
+          try {
+            data =
+              await response.json();
+          } catch {
+            data = null;
+          }
+
+
+          if (
+            response.status === 401
+          ) {
+            sessionStorage.removeItem(
+              "maru_admin_token"
+            );
+
+            sessionStorage.removeItem(
+              "maru_admin_expires"
+            );
+
+            alert(
+              "ログインの有効期限が切れました。"
+            );
+
+            window.location.replace(
+              "./"
+            );
+
+            return;
+          }
+
+
+          if (
+            !response.ok ||
+            !data?.success
+          ) {
+            throw new Error(
+              data?.message ||
+              `保存に失敗しました (HTTP ${response.status})`
+            );
+          }
+
+
+          showStatus(
+            "保存しました！",
+            "success"
+          );
+
+
+        } catch (error) {
+
+          console.error(
+            "[Maru Admin Save]",
+            error
+          );
+
+          showStatus(
+            error.message ||
+            "保存に失敗しました",
+            "error"
+          );
+
+        } finally {
+
+          saveButton.disabled =
+            false;
+
+          saveButton.textContent =
+            "保存する";
+        }
+      }
+    );
+
+
+    logout.addEventListener(
+      "click",
+      () => {
+
+        sessionStorage.removeItem(
+          "maru_admin_token"
+        );
+
+        sessionStorage.removeItem(
+          "maru_admin_expires"
+        );
+
+        window.location.replace(
+          "./"
+        );
+      }
+    );
+
+
+    loadSiteData();
 
   </script>
 
 </body>
+
 </html>
