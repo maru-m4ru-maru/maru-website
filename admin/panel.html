@@ -128,15 +128,16 @@
           target="_blank"
           class="sidebar-link"
         >
-          ↗ サイトを見る
+          ↗ View Website
         </a>
+
 
         <button
           id="logout"
           class="sidebar-link logout"
           type="button"
         >
-          ↪ ログアウト
+          ↪ Logout
         </button>
 
       </div>
@@ -151,32 +152,46 @@
       <header class="topbar">
 
         <div>
+
           <h1 id="page-title">
             Overview
           </h1>
 
           <p id="page-description">
-            サイトの状態を確認します。
+            View the current website status.
           </p>
+
         </div>
 
 
         <div class="topbar-actions">
+
+          <!-- 操作説明ボタン -->
+
+          <button
+            id="help-button"
+            class="secondary-button"
+            type="button"
+          >
+            ? 操作説明
+          </button>
+
 
           <div
             id="save-indicator"
             class="save-indicator saved"
           >
             <span></span>
-            保存済み
+            Saved
           </div>
+
 
           <button
             id="save-top"
             class="primary-button"
             type="button"
           >
-            保存する
+            Save
           </button>
 
         </div>
@@ -206,7 +221,7 @@
             </strong>
 
             <small>
-              サイト名
+              Site name
             </small>
 
           </div>
@@ -225,7 +240,7 @@
             </strong>
 
             <small>
-              最新バージョン
+              Latest version
             </small>
 
           </div>
@@ -244,7 +259,7 @@
             </strong>
 
             <small>
-              最終更新日
+              Last updated
             </small>
 
           </div>
@@ -259,13 +274,15 @@
             <div class="panel-header">
 
               <div>
+
                 <h2>
-                  クイック編集
+                  Quick Edit
                 </h2>
 
                 <p>
-                  よく変更する項目だけをここから編集できます。
+                  Edit the most frequently changed information here.
                 </p>
+
               </div>
 
             </div>
@@ -276,7 +293,7 @@
               <div class="field">
 
                 <label for="quick-version">
-                  最新バージョン
+                  Latest version
                 </label>
 
                 <input
@@ -290,7 +307,7 @@
               <div class="field">
 
                 <label for="quick-update">
-                  最新アップデート
+                  Latest update
                 </label>
 
                 <textarea
@@ -311,6 +328,7 @@
               <span class="preview-dot"></span>
             </div>
 
+
             <div class="mini-preview">
 
               <img
@@ -318,18 +336,22 @@
                 alt=""
               >
 
+
               <div>
+
                 <strong
                   id="preview-site-name"
                 >
                   maru_m4ru_maru
                 </strong>
 
+
                 <p
                   id="preview-tagline"
                 >
                   ScratchやWebを、もっと便利に。
                 </p>
+
               </div>
 
             </div>
@@ -351,12 +373,19 @@
         <div class="section-title">
 
           <div>
+
             <span>01</span>
 
             <div>
+
               <p>SITE</p>
-              <h2>サイト情報</h2>
+
+              <h2>
+                Site Information
+              </h2>
+
             </div>
+
           </div>
 
         </div>
@@ -367,13 +396,15 @@
           <div class="panel-header">
 
             <div>
+
               <h2>
-                基本情報
+                Basic Information
               </h2>
 
               <p>
-                ホームページ上部やサイト全体で使用される情報です。
+                Edit the main information displayed on the website.
               </p>
+
             </div>
 
           </div>
@@ -384,7 +415,7 @@
             <div class="field full">
 
               <label for="site-name">
-                表示名
+                Site name
               </label>
 
               <input
@@ -395,13 +426,15 @@
               >
 
               <div class="field-meta">
+
                 <span>
-                  サイト上で使用する名前
+                  Name displayed on the website
                 </span>
 
                 <span id="site-name-count">
                   0 / 100
                 </span>
+
               </div>
 
             </div>
@@ -410,7 +443,7 @@
             <div class="field full">
 
               <label for="tagline">
-                キャッチコピー
+                Tagline
               </label>
 
               <input
@@ -421,13 +454,15 @@
               >
 
               <div class="field-meta">
+
                 <span>
-                  トップページのメインコピー
+                  Main headline on the homepage
                 </span>
 
                 <span id="tagline-count">
                   0 / 200
                 </span>
+
               </div>
 
             </div>
@@ -436,23 +471,25 @@
             <div class="field full">
 
               <label for="description">
-                サイト説明
+                Description
               </label>
 
               <textarea
                 id="description"
                 maxlength="1000"
-                placeholder="サイトの説明..."
+                placeholder="Website description..."
               ></textarea>
 
               <div class="field-meta">
+
                 <span>
-                  サイト紹介文
+                  Website introduction
                 </span>
 
                 <span id="description-count">
                   0 / 1000
                 </span>
+
               </div>
 
             </div>
@@ -474,11 +511,17 @@
         <div class="section-title">
 
           <div>
+
             <span>02</span>
 
             <div>
-              <p>ADDONS</p>
-              <h2>まる Addons</h2>
+
+              <p>PROJECT</p>
+
+              <h2>
+                まる Addons
+              </h2>
+
             </div>
 
           </div>
@@ -491,13 +534,15 @@
           <div class="panel-header">
 
             <div>
+
               <h2>
-                プロジェクト情報
+                Project Information
               </h2>
 
               <p>
-                公式サイトに表示するAddonsの情報を編集します。
+                Edit the information displayed for まる Addons.
               </p>
+
             </div>
 
           </div>
@@ -508,7 +553,7 @@
             <div class="field">
 
               <label for="addons-version">
-                最新バージョン
+                Latest version
               </label>
 
               <input
@@ -524,7 +569,7 @@
             <div class="field">
 
               <label for="update-date">
-                更新日
+                Update date
               </label>
 
               <input
@@ -540,19 +585,19 @@
             <div class="field full">
 
               <label for="addons-update">
-                最新アップデート
+                Latest update
               </label>
 
               <textarea
                 id="addons-update"
                 maxlength="1000"
-                placeholder="最新バージョンの変更内容..."
+                placeholder="Latest update description..."
               ></textarea>
 
               <div class="field-meta">
 
                 <span>
-                  更新内容の説明
+                  Description of the latest update
                 </span>
 
                 <span id="addons-update-count">
@@ -568,28 +613,33 @@
         </div>
 
 
-        <div class="panel-card danger-card">
+        <div class="panel-card">
 
-          <div>
+          <div class="simple-row">
 
-            <h2>
-              Addons GitHub
-            </h2>
+            <div>
 
-            <p>
-              ソースコードや変更履歴はGitHubで管理されています。
-            </p>
+              <h2>
+                Addons Source Code
+              </h2>
+
+              <p>
+                View the source code and change history.
+              </p>
+
+            </div>
+
+
+            <a
+              class="secondary-button"
+              href="https://github.com/maru-m4ru-maru/maru-addons"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open GitHub ↗
+            </a>
 
           </div>
-
-          <a
-            class="secondary-button"
-            href="https://github.com/maru-m4ru-maru/maru-addons"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            GitHubを開く ↗
-          </a>
 
         </div>
 
@@ -610,8 +660,13 @@
             <span>03</span>
 
             <div>
+
               <p>UPDATES</p>
-              <h2>更新情報</h2>
+
+              <h2>
+                Updates
+              </h2>
+
             </div>
 
           </div>
@@ -628,11 +683,11 @@
             </div>
 
             <h2>
-              更新履歴
+              Update History
             </h2>
 
             <p>
-              更新履歴の管理機能は次のアップデートで追加できます。
+              Update history management can be added in a future update.
             </p>
 
           </div>
@@ -652,7 +707,7 @@
             id="save-status"
             class="save-text"
           >
-            保存済み
+            Saved
           </div>
 
           <div
@@ -672,15 +727,16 @@
             class="secondary-button"
             type="button"
           >
-            変更を戻す
+            Reset Changes
           </button>
+
 
           <button
             id="save-bottom"
             class="primary-button"
             type="button"
           >
-            保存する
+            Save
           </button>
 
         </div>
@@ -690,26 +746,26 @@
     </main>
 
 
-    <!-- RIGHT PREVIEW -->
+    <!-- LIVE PREVIEW -->
 
     <aside class="right-preview">
 
       <div class="right-preview-header">
 
         <div>
+
           <span>
             LIVE PREVIEW
           </span>
 
           <strong>
-            ホームページ
+            Homepage
           </strong>
+
         </div>
 
-        <span
-          id="preview-status"
-          class="preview-status"
-        >
+
+        <span class="preview-status">
           LIVE
         </span>
 
@@ -721,10 +777,13 @@
         <div class="browser-top">
 
           <div class="browser-dots">
+
             <i></i>
             <i></i>
             <i></i>
+
           </div>
+
 
           <div class="browser-url">
             maru-m4ru-maru.github.io
@@ -779,15 +838,18 @@
               Scratch
             </div>
 
+
             <strong>
               まる Addons
             </strong>
+
 
             <span
               id="live-version"
             >
               v1.4.5
             </span>
+
 
             <p
               id="live-update"
@@ -807,11 +869,176 @@
   </div>
 
 
+  <!-- HELP MODAL -->
+
+  <div
+    id="help-modal"
+    class="modal hidden"
+  >
+
+    <div class="modal-backdrop"></div>
+
+
+    <div
+      class="modal-box"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="help-title"
+    >
+
+      <div class="modal-header">
+
+        <div>
+
+          <span>
+            操作説明
+          </span>
+
+          <h2 id="help-title">
+            管理画面の使い方
+          </h2>
+
+        </div>
+
+
+        <button
+          id="help-close"
+          class="modal-close"
+          type="button"
+          aria-label="閉じる"
+        >
+          ×
+        </button>
+
+      </div>
+
+
+      <div class="help-content">
+
+
+        <div class="help-step">
+
+          <strong>
+            1. 編集する
+          </strong>
+
+          <p>
+            左側のメニューから編集したい項目を選び、
+            入力欄を書き換えます。
+          </p>
+
+        </div>
+
+
+        <div class="help-step">
+
+          <strong>
+            2. プレビューを確認する
+          </strong>
+
+          <p>
+            入力した内容は右側の
+            「LIVE PREVIEW」にリアルタイムで反映されます。
+          </p>
+
+        </div>
+
+
+        <div class="help-step">
+
+          <strong>
+            3. 保存する
+          </strong>
+
+          <p>
+            内容を確認したら「Save」を押してください。
+            GitHub上のサイトデータが更新されます。
+          </p>
+
+        </div>
+
+
+        <div class="help-step">
+
+          <strong>
+            4. 変更を元に戻す
+          </strong>
+
+          <p>
+            まだ保存していない変更は
+            「Reset Changes」で最後に保存した状態へ戻せます。
+          </p>
+
+        </div>
+
+
+        <div class="help-step">
+
+          <strong>
+            5. キーボードから保存
+          </strong>
+
+          <p>
+            パソコンでは
+            <strong>Ctrl + S</strong>
+            でも保存できます。
+          </p>
+
+        </div>
+
+
+        <div class="help-step">
+
+          <strong>
+            6. サイトを確認する
+          </strong>
+
+          <p>
+            左下の「View Website」から
+            公開されているホームページを開けます。
+          </p>
+
+        </div>
+
+
+        <div class="help-warning">
+
+          <strong>
+            注意
+          </strong>
+
+          <p>
+            「Save」を押すと実際のサイトデータが更新されます。
+            内容を確認してから保存してください。
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="modal-footer">
+
+        <button
+          id="help-ok"
+          class="primary-button"
+          type="button"
+        >
+          閉じる
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
   <div
     id="toast"
     class="toast"
   >
-    保存しました
+    Saved
   </div>
 
 
