@@ -11,16 +11,49 @@ let currentPage = "overview";
 
 
 const pageTitles = {
-  overview: "Overview",
-  site: "Site",
-  pages: "Pages",
-  sections: "Sections",
-  projects: "Projects",
-  updates: "Updates",
-  links: "Links",
-  embeds: "Embeds",
-  navigation: "Navigation",
-  settings: "Site Settings"
+  overview: "概要",
+  site: "サイト",
+  pages: "ページ",
+  sections: "セクション",
+  projects: "プロジェクト",
+  updates: "更新情報",
+  links: "リンク",
+  embeds: "埋め込み",
+  navigation: "ナビゲーション",
+  settings: "サイト設定"
+};
+
+
+const pageDescriptions = {
+  overview:
+    "サイト全体の状態を確認します。",
+
+  site:
+    "サイト名や説明、アイコンなどを変更します。",
+
+  pages:
+    "サイトのページ構成を管理します。",
+
+  sections:
+    "ホームページの構成と順番を管理します。",
+
+  projects:
+    "プロジェクトを追加・編集します。",
+
+  updates:
+    "アップデート情報を追加・編集します。",
+
+  links:
+    "サイトで使用するリンクを管理します。",
+
+  embeds:
+    "URLを指定して外部コンテンツを埋め込めます。",
+
+  navigation:
+    "サイト上部のナビゲーションを管理します。",
+
+  settings:
+    "サイト全体の表示設定を変更します。"
 };
 
 
@@ -45,7 +78,7 @@ const previewContent =
 
 
 /* =========================
-   AUTH
+   認証
 ========================= */
 
 function getToken() {
@@ -87,7 +120,7 @@ function requireAuth() {
 
 
 /* =========================
-   UTILITIES
+   共通
 ========================= */
 
 function clone(value) {
@@ -121,14 +154,18 @@ function escapeHtml(value) {
 
 
 function markDirty() {
-  saveState.textContent = "Unsaved";
+  saveState.textContent =
+    "未保存";
+
   saveState.className =
     "save-state dirty";
 }
 
 
 function markSaved() {
-  saveState.textContent = "Saved";
+  saveState.textContent =
+    "保存済み";
+
   saveState.className =
     "save-state saved";
 }
@@ -139,19 +176,29 @@ function showToast(message) {
   const toast =
     document.createElement("div");
 
-  toast.className = "toast";
-  toast.textContent = message;
+  toast.className =
+    "toast";
 
-  document.body.appendChild(toast);
+  toast.textContent =
+    message;
+
+  document.body.appendChild(
+    toast
+  );
 
   setTimeout(() => {
     toast.remove();
-  }, 2600);
+  }, 2500);
 }
 
 
 function getArray(name) {
-  if (!Array.isArray(siteData[name])) {
+
+  if (
+    !Array.isArray(
+      siteData[name]
+    )
+  ) {
     siteData[name] = [];
   }
 
@@ -159,20 +206,51 @@ function getArray(name) {
 }
 
 
+function bindInput(
+  id,
+  callback
+) {
+
+  const element =
+    document.getElementById(id);
+
+  if (!element) {
+    return;
+  }
+
+  element.addEventListener(
+    "input",
+    (event) => {
+
+      callback(
+        event.target.value
+      );
+
+      markDirty();
+      renderPreview();
+
+    }
+  );
+
+}
+
+
 /* =========================
-   LOAD
+   データ読み込み
 ========================= */
 
 async function loadData() {
 
   try {
 
-    const response = await fetch(
-      `${DATA_URL}?cb=${Date.now()}`,
-      {
-        cache: "no-store"
-      }
-    );
+    const response =
+      await fetch(
+        `${DATA_URL}?cb=${Date.now()}`,
+        {
+          cache: "no-store"
+        }
+      );
+
 
     if (!response.ok) {
       throw new Error(
@@ -180,29 +258,50 @@ async function loadData() {
       );
     }
 
-    siteData = await response.json();
+
+    siteData =
+      await response.json();
+
 
     normalizeData();
 
-    savedSnapshot = clone(siteData);
+
+    savedSnapshot =
+      clone(siteData);
+
 
     markSaved();
 
-    renderPage(currentPage);
+    renderPage(
+      currentPage
+    );
 
     renderPreview();
+
 
   } catch (error) {
 
     console.error(error);
 
     pageContent.innerHTML = `
+
       <div class="card">
-        <strong>Failed to load site-data.json</strong>
-        <p>
-          ${escapeHtml(error.message)}
+
+        <strong>
+          データを読み込めませんでした
+        </strong>
+
+        <p style="
+          color:#777e87;
+          font-size:11px;
+        ">
+          ${escapeHtml(
+            error.message
+          )}
         </p>
+
       </div>
+
     `;
 
   }
@@ -211,7 +310,7 @@ async function loadData() {
 
 
 /* =========================
-   DATA NORMALIZATION
+   データ補正
 ========================= */
 
 function normalizeData() {
@@ -220,88 +319,112 @@ function normalizeData() {
     siteData.site = {};
   }
 
-  if (!siteData.site.name) {
+
+  if (
+    !siteData.site.name
+  ) {
     siteData.site.name =
       "maru_m4ru_maru";
   }
 
-  if (!siteData.site.avatar) {
+
+  if (
+    !siteData.site.avatar
+  ) {
     siteData.site.avatar =
       "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png";
   }
 
-  if (!siteData.navigation) {
-    siteData.navigation = [];
-  }
 
-  if (!siteData.stats) {
-    siteData.stats = [];
-  }
+  const arrays = [
+    "navigation",
+    "stats",
+    "projects",
+    "updates",
+    "embeds",
+    "links",
+    "sections"
+  ];
 
-  if (!siteData.projects) {
-    siteData.projects = [];
-  }
 
-  if (!siteData.updates) {
-    siteData.updates = [];
-  }
+  arrays.forEach(
+    (name) => {
 
-  if (!siteData.embeds) {
-    siteData.embeds = [];
-  }
+      if (
+        !Array.isArray(
+          siteData[name]
+        )
+      ) {
+        siteData[name] = [];
+      }
 
-  if (!siteData.links) {
-    siteData.links = [];
-  }
+    }
+  );
 
-  if (!siteData.sections) {
-    siteData.sections = [];
-  }
 
   if (!siteData.settings) {
     siteData.settings = {};
   }
 
+
   if (
-    typeof siteData.settings.showFooter !==
+    typeof siteData.settings
+      .showFooter !==
     "boolean"
   ) {
-    siteData.settings.showFooter = true;
+
+    siteData.settings.showFooter =
+      true;
+
   }
 
 }
 
 
 /* =========================
-   PAGE NAVIGATION
+   ページ移動
 ========================= */
 
 document
-  .querySelectorAll(".nav-item")
-  .forEach((button) => {
+  .querySelectorAll(
+    ".nav-item"
+  )
+  .forEach(
+    (button) => {
 
-    button.addEventListener(
-      "click",
-      () => {
+      button.addEventListener(
+        "click",
+        () => {
 
-        currentPage =
-          button.dataset.page;
+          currentPage =
+            button.dataset.page;
 
-        document
-          .querySelectorAll(".nav-item")
-          .forEach((item) => {
-            item.classList.toggle(
-              "active",
-              item === button
+
+          document
+            .querySelectorAll(
+              ".nav-item"
+            )
+            .forEach(
+              (item) => {
+
+                item.classList.toggle(
+                  "active",
+                  item === button
+                );
+
+              }
             );
-          });
 
-        renderPage(currentPage);
 
-      }
-    );
+          renderPage(
+            currentPage
+          );
 
-  });
+        }
+      );
+
+    }
+  );
 
 
 function renderPage(page) {
@@ -310,7 +433,10 @@ function renderPage(page) {
     pageTitles[page] ||
     page;
 
-  pageContent.innerHTML = "";
+
+  pageContent.innerHTML =
+    "";
+
 
   switch (page) {
 
@@ -363,65 +489,117 @@ function renderPage(page) {
 
 
 /* =========================
-   OVERVIEW
+   概要
 ========================= */
 
 function renderOverview() {
 
-  const enabledProjects =
+  const projects =
     getArray("projects")
       .filter(
-        (item) => item.enabled !== false
+        (item) =>
+          item.enabled !== false
       ).length;
 
-  const enabledSections =
+
+  const sections =
     getArray("sections")
       .filter(
-        (item) => item.enabled !== false
+        (item) =>
+          item.enabled !== false
       ).length;
+
 
   const updates =
     getArray("updates").length;
 
+
   const embeds =
     getArray("embeds").length;
+
 
   pageContent.innerHTML = `
 
     <div class="page-heading">
-      <h2>Welcome back.</h2>
+
+      <h2>
+        こんにちは。
+      </h2>
+
       <p>
-        Manage your website content from one place.
-        Changes are kept locally until you press
-        Save Changes.
+        ここからサイトの内容をまとめて管理できます。
       </p>
+
     </div>
 
 
     <div class="dashboard-grid">
 
       <div class="dashboard-card">
-        <span>Projects</span>
-        <strong>${enabledProjects}</strong>
-        <p>Visible projects</p>
+
+        <span>
+          PROJECTS
+        </span>
+
+        <strong>
+          ${projects}
+        </strong>
+
+        <p>
+          公開中のプロジェクト
+        </p>
+
       </div>
 
-      <div class="dashboard-card">
-        <span>Sections</span>
-        <strong>${enabledSections}</strong>
-        <p>Active homepage sections</p>
-      </div>
 
       <div class="dashboard-card">
-        <span>Updates</span>
-        <strong>${updates}</strong>
-        <p>Published updates</p>
+
+        <span>
+          SECTIONS
+        </span>
+
+        <strong>
+          ${sections}
+        </strong>
+
+        <p>
+          有効なセクション
+        </p>
+
       </div>
 
+
       <div class="dashboard-card">
-        <span>Embeds</span>
-        <strong>${embeds}</strong>
-        <p>Embedded pages</p>
+
+        <span>
+          UPDATES
+        </span>
+
+        <strong>
+          ${updates}
+        </strong>
+
+        <p>
+          登録されている更新情報
+        </p>
+
+      </div>
+
+
+      <div class="dashboard-card">
+
+        <span>
+          EMBEDS
+        </span>
+
+        <strong>
+          ${embeds}
+        </strong>
+
+        <p>
+          埋め込みコンテンツ
+        </p>
+
       </div>
 
     </div>
@@ -430,37 +608,33 @@ function renderOverview() {
     <div class="card">
 
       <div class="card-header">
-        <strong>Current Site</strong>
-        <span>LIVE DATA</span>
+
+        <strong>
+          現在のサイト
+        </strong>
+
+        <span>
+          LIVE
+        </span>
+
       </div>
 
-      <div class="form-grid">
 
-        <div>
-          <strong>
-            ${escapeHtml(
-              siteData.site.name
-            )}
-          </strong>
+      <div>
 
-          <div style="
-            margin-top:4px;
-            color:#7d838c;
-            font-size:11px;
-          ">
-            ${escapeHtml(
-              siteData.site.tagline
-            )}
-          </div>
-        </div>
+        <strong>
+          ${escapeHtml(
+            siteData.site.name
+          )}
+        </strong>
 
         <div style="
-          text-align:right;
-          color:#7d838c;
-          font-size:11px;
+          margin-top:4px;
+          color:#777e87;
+          font-size:10px;
         ">
           ${escapeHtml(
-            siteData.site.github || ""
+            siteData.site.tagline
           )}
         </div>
 
@@ -474,21 +648,27 @@ function renderOverview() {
 
 
 /* =========================
-   SITE
+   サイト
 ========================= */
 
 function renderSite() {
 
   const site =
-    siteData.site || {};
+    siteData.site;
+
 
   pageContent.innerHTML = `
 
     <div class="page-heading">
-      <h2>Site Identity</h2>
+
+      <h2>
+        サイト情報
+      </h2>
+
       <p>
-        Basic information displayed across the website.
+        サイト全体で使用する基本情報を編集します。
       </p>
+
     </div>
 
 
@@ -498,7 +678,9 @@ function renderSite() {
 
         <div class="field">
 
-          <label>Site Name</label>
+          <label>
+            サイト名
+          </label>
 
           <input
             id="siteName"
@@ -512,7 +694,9 @@ function renderSite() {
 
         <div class="field">
 
-          <label>Tagline</label>
+          <label>
+            キャッチコピー
+          </label>
 
           <input
             id="siteTagline"
@@ -526,7 +710,9 @@ function renderSite() {
 
         <div class="field full">
 
-          <label>Description</label>
+          <label>
+            説明
+          </label>
 
           <textarea
             id="siteDescription"
@@ -539,7 +725,9 @@ function renderSite() {
 
         <div class="field">
 
-          <label>Avatar URL</label>
+          <label>
+            アイコンURL
+          </label>
 
           <input
             id="siteAvatar"
@@ -553,7 +741,9 @@ function renderSite() {
 
         <div class="field">
 
-          <label>GitHub URL</label>
+          <label>
+            GitHub URL
+          </label>
 
           <input
             id="siteGithub"
@@ -574,35 +764,44 @@ function renderSite() {
   bindInput(
     "siteName",
     (value) => {
-      siteData.site.name = value;
+      siteData.site.name =
+        value;
     }
   );
+
 
   bindInput(
     "siteTagline",
     (value) => {
-      siteData.site.tagline = value;
+      siteData.site.tagline =
+        value;
     }
   );
+
 
   bindInput(
     "siteDescription",
     (value) => {
-      siteData.site.description = value;
+      siteData.site.description =
+        value;
     }
   );
+
 
   bindInput(
     "siteAvatar",
     (value) => {
-      siteData.site.avatar = value;
+      siteData.site.avatar =
+        value;
     }
   );
+
 
   bindInput(
     "siteGithub",
     (value) => {
-      siteData.site.github = value;
+      siteData.site.github =
+        value;
     }
   );
 
@@ -610,7 +809,7 @@ function renderSite() {
 
 
 /* =========================
-   PAGES
+   ページ
 ========================= */
 
 function renderPages() {
@@ -618,10 +817,15 @@ function renderPages() {
   pageContent.innerHTML = `
 
     <div class="page-heading">
-      <h2>Pages</h2>
+
+      <h2>
+        ページ
+      </h2>
+
       <p>
-        Homepage and future pages can be managed here.
+        サイトのページ構成を管理します。
       </p>
+
     </div>
 
 
@@ -635,7 +839,9 @@ function renderPages() {
 
         <div class="item-main">
 
-          <strong>Home</strong>
+          <strong>
+            Home
+          </strong>
 
           <span>
             /
@@ -645,10 +851,8 @@ function renderPages() {
 
         <div class="item-actions">
 
-          <button
-            disabled
-          >
-            Primary
+          <button disabled>
+            基本ページ
           </button>
 
         </div>
@@ -661,18 +865,25 @@ function renderPages() {
     <div class="card">
 
       <div class="card-header">
-        <strong>Coming Next</strong>
-        <span>CMS</span>
+
+        <strong>
+          今後の拡張
+        </strong>
+
+        <span>
+          CMS
+        </span>
+
       </div>
 
       <p style="
         margin:0;
-        color:#757c85;
-        font-size:11px;
+        color:#777e87;
+        font-size:10px;
         line-height:1.7;
       ">
-        Additional custom pages can be connected
-        to the same CMS structure later.
+        今後、独立したページも
+        この管理画面から作成できるようにできます。
       </p>
 
     </div>
@@ -683,7 +894,7 @@ function renderPages() {
 
 
 /* =========================
-   SECTIONS
+   セクション
 ========================= */
 
 function renderSections() {
@@ -696,10 +907,12 @@ function renderSections() {
 
     <div class="page-heading">
 
-      <h2>Homepage Sections</h2>
+      <h2>
+        ホーム構成
+      </h2>
 
       <p>
-        Enable, disable and reorder homepage sections.
+        ホームページに表示するセクションを管理します。
       </p>
 
     </div>
@@ -709,13 +922,15 @@ function renderSections() {
 
       <div class="card-header">
 
-        <strong>Section Order</strong>
+        <strong>
+          表示順
+        </strong>
 
         <button
           id="addSectionButton"
           class="button small"
         >
-          + Add Section
+          ＋ セクション追加
         </button>
 
       </div>
@@ -745,14 +960,17 @@ function renderSections() {
           "div"
         );
 
+
       row.className =
         "section-row";
+
 
       row.innerHTML = `
 
         <div class="section-order">
           ${index + 1}
         </div>
+
 
         <div>
 
@@ -778,7 +996,6 @@ function renderSections() {
               ? "on"
               : ""
           }"
-          title="Toggle section"
         ></button>
 
 
@@ -799,13 +1016,13 @@ function renderSections() {
           <button
             class="edit-section"
           >
-            Edit
+            編集
           </button>
 
           <button
             class="delete-section"
           >
-            Delete
+            削除
           </button>
 
         </div>
@@ -814,7 +1031,9 @@ function renderSections() {
 
 
       row
-        .querySelector(".toggle")
+        .querySelector(
+          ".toggle"
+        )
         .addEventListener(
           "click",
           () => {
@@ -823,7 +1042,9 @@ function renderSections() {
               section.enabled === false;
 
             markDirty();
+
             renderSections();
+
             renderPreview();
 
           }
@@ -831,14 +1052,19 @@ function renderSections() {
 
 
       row
-        .querySelector(".move-up")
+        .querySelector(
+          ".move-up"
+        )
         .addEventListener(
           "click",
           () => {
 
-            if (index <= 0) {
+            if (
+              index <= 0
+            ) {
               return;
             }
+
 
             [
               sections[index - 1],
@@ -848,8 +1074,11 @@ function renderSections() {
               sections[index - 1]
             ];
 
+
             markDirty();
+
             renderSections();
+
             renderPreview();
 
           }
@@ -857,7 +1086,9 @@ function renderSections() {
 
 
       row
-        .querySelector(".move-down")
+        .querySelector(
+          ".move-down"
+        )
         .addEventListener(
           "click",
           () => {
@@ -869,6 +1100,7 @@ function renderSections() {
               return;
             }
 
+
             [
               sections[index + 1],
               sections[index]
@@ -877,8 +1109,11 @@ function renderSections() {
               sections[index + 1]
             ];
 
+
             markDirty();
+
             renderSections();
+
             renderPreview();
 
           }
@@ -886,37 +1121,41 @@ function renderSections() {
 
 
       row
-        .querySelector(".edit-section")
+        .querySelector(
+          ".edit-section"
+        )
         .addEventListener(
           "click",
           () => {
-
             openSectionEditor(
               section
             );
-
           }
         );
 
 
       row
-        .querySelector(".delete-section")
+        .querySelector(
+          ".delete-section"
+        )
         .addEventListener(
           "click",
           () => {
 
             if (
               !confirm(
-                `Delete section "${section.title}"?`
+                "このセクションを削除しますか？"
               )
             ) {
               return;
             }
 
+
             sections.splice(
               index,
               1
             );
+
 
             markDirty();
 
@@ -945,12 +1184,16 @@ function renderSections() {
         const section = {
           id: makeId("section"),
           type: "text",
-          title: "New Section",
+          title: "新しいセクション",
           description: "",
           enabled: true
         };
 
-        sections.push(section);
+
+        sections.push(
+          section
+        );
+
 
         markDirty();
 
@@ -964,16 +1207,20 @@ function renderSections() {
 }
 
 
-function openSectionEditor(section) {
+function openSectionEditor(
+  section
+) {
 
   pageContent.innerHTML = `
 
     <div class="page-heading">
 
-      <h2>Edit Section</h2>
+      <h2>
+        セクションを編集
+      </h2>
 
       <p>
-        Configure this homepage section.
+        セクションの内容を変更します。
       </p>
 
     </div>
@@ -985,18 +1232,45 @@ function openSectionEditor(section) {
 
         <div class="field">
 
-          <label>Type</label>
+          <label>
+            種類
+          </label>
 
-          <select id="sectionType">
+          <select
+            id="sectionType"
+          >
 
-            <option value="hero">Hero</option>
-            <option value="stats">Stats</option>
-            <option value="projects">Projects</option>
-            <option value="updates">Updates</option>
-            <option value="embeds">Embeds</option>
-            <option value="links">Links</option>
-            <option value="github">GitHub</option>
-            <option value="text">Text</option>
+            <option value="hero">
+              Hero
+            </option>
+
+            <option value="stats">
+              Stats
+            </option>
+
+            <option value="projects">
+              Projects
+            </option>
+
+            <option value="updates">
+              Updates
+            </option>
+
+            <option value="embeds">
+              Embeds
+            </option>
+
+            <option value="links">
+              Links
+            </option>
+
+            <option value="github">
+              GitHub
+            </option>
+
+            <option value="text">
+              Text
+            </option>
 
           </select>
 
@@ -1005,7 +1279,9 @@ function openSectionEditor(section) {
 
         <div class="field">
 
-          <label>Title</label>
+          <label>
+            タイトル
+          </label>
 
           <input
             id="sectionTitle"
@@ -1019,7 +1295,9 @@ function openSectionEditor(section) {
 
         <div class="field full">
 
-          <label>Description</label>
+          <label>
+            説明
+          </label>
 
           <textarea
             id="sectionDescription"
@@ -1031,6 +1309,7 @@ function openSectionEditor(section) {
 
       </div>
 
+
       <div style="
         margin-top:16px;
         display:flex;
@@ -1041,14 +1320,14 @@ function openSectionEditor(section) {
           id="saveSectionLocal"
           class="button primary"
         >
-          Apply
+          変更を適用
         </button>
 
         <button
           id="cancelSectionEdit"
           class="button"
         >
-          Cancel
+          戻る
         </button>
 
       </div>
@@ -1061,7 +1340,8 @@ function openSectionEditor(section) {
   document.getElementById(
     "sectionType"
   ).value =
-    section.type || "text";
+    section.type ||
+    "text";
 
 
   document
@@ -1077,15 +1357,18 @@ function openSectionEditor(section) {
             "sectionType"
           ).value;
 
+
         section.title =
           document.getElementById(
             "sectionTitle"
           ).value;
 
+
         section.description =
           document.getElementById(
             "sectionDescription"
           ).value;
+
 
         markDirty();
 
@@ -1112,7 +1395,7 @@ function openSectionEditor(section) {
 
 
 /* =========================
-   PROJECTS
+   プロジェクト
 ========================= */
 
 function renderProjects() {
@@ -1125,11 +1408,12 @@ function renderProjects() {
 
     <div class="page-heading">
 
-      <h2>Projects</h2>
+      <h2>
+        プロジェクト
+      </h2>
 
       <p>
-        Create and manage project cards displayed
-        on the homepage.
+        プロジェクトカードを追加・編集できます。
       </p>
 
     </div>
@@ -1139,13 +1423,15 @@ function renderProjects() {
 
       <div class="card-header">
 
-        <strong>Project Collection</strong>
+        <strong>
+          プロジェクト一覧
+        </strong>
 
         <button
           id="addProjectButton"
           class="button primary small"
         >
-          + Add Project
+          ＋ プロジェクト追加
         </button>
 
       </div>
@@ -1171,7 +1457,7 @@ function renderProjects() {
 
     list.innerHTML =
       `<div class="empty">
-        No projects yet.
+        プロジェクトはまだありません。
       </div>`;
 
   }
@@ -1185,14 +1471,17 @@ function renderProjects() {
           "div"
         );
 
+
       item.className =
         "editor-item";
+
 
       item.innerHTML = `
 
         <div class="drag-handle">
           ◆
         </div>
+
 
         <div class="item-main">
 
@@ -1204,11 +1493,13 @@ function renderProjects() {
 
           <span>
             ${escapeHtml(
-              project.status || "No status"
+              project.status ||
+              "ステータス未設定"
             )}
           </span>
 
         </div>
+
 
         <div class="item-actions">
 
@@ -1217,21 +1508,23 @@ function renderProjects() {
           >
             ${
               project.enabled !== false
-                ? "Enabled"
-                : "Disabled"
+                ? "公開中"
+                : "非公開"
             }
           </button>
+
 
           <button
             class="editProject"
           >
-            Edit
+            編集
           </button>
+
 
           <button
             class="deleteProject"
           >
-            Delete
+            削除
           </button>
 
         </div>
@@ -1286,16 +1579,18 @@ function renderProjects() {
 
             if (
               !confirm(
-                `Delete "${project.title}"?`
+                `「${project.title}」を削除しますか？`
               )
             ) {
               return;
             }
 
+
             projects.splice(
               index,
               1
             );
+
 
             markDirty();
 
@@ -1323,9 +1618,9 @@ function renderProjects() {
 
         const project = {
           id: makeId("project"),
-          title: "New Project",
+          title: "新しいプロジェクト",
           description: "",
-          status: "In Development",
+          status: "DRAFT",
           tags: [],
           url: "",
           github: "",
@@ -1334,7 +1629,11 @@ function renderProjects() {
           enabled: true
         };
 
-        projects.push(project);
+
+        projects.push(
+          project
+        );
+
 
         markDirty();
 
@@ -1348,16 +1647,20 @@ function renderProjects() {
 }
 
 
-function openProjectEditor(project) {
+function openProjectEditor(
+  project
+) {
 
   pageContent.innerHTML = `
 
     <div class="page-heading">
 
-      <h2>Edit Project</h2>
+      <h2>
+        プロジェクトを編集
+      </h2>
 
       <p>
-        Everything here is stored in site-data.json.
+        このプロジェクトに表示する内容を設定します。
       </p>
 
     </div>
@@ -1369,7 +1672,9 @@ function openProjectEditor(project) {
 
         <div class="field">
 
-          <label>Title</label>
+          <label>
+            名前
+          </label>
 
           <input
             id="projectTitle"
@@ -1383,7 +1688,9 @@ function openProjectEditor(project) {
 
         <div class="field">
 
-          <label>Status</label>
+          <label>
+            ステータス
+          </label>
 
           <input
             id="projectStatus"
@@ -1397,7 +1704,9 @@ function openProjectEditor(project) {
 
         <div class="field">
 
-          <label>Icon</label>
+          <label>
+            アイコン
+          </label>
 
           <input
             id="projectIcon"
@@ -1412,7 +1721,9 @@ function openProjectEditor(project) {
 
         <div class="field">
 
-          <label>Project URL</label>
+          <label>
+            プロジェクトURL
+          </label>
 
           <input
             id="projectUrl"
@@ -1426,7 +1737,9 @@ function openProjectEditor(project) {
 
         <div class="field">
 
-          <label>GitHub URL</label>
+          <label>
+            GitHub URL
+          </label>
 
           <input
             id="projectGithub"
@@ -1440,12 +1753,17 @@ function openProjectEditor(project) {
 
         <div class="field">
 
-          <label>Tags</label>
+          <label>
+            タグ
+          </label>
 
           <input
             id="projectTags"
             value="${escapeHtml(
-              (project.tags || []).join(", ")
+              (
+                project.tags ||
+                []
+              ).join(", ")
             )}"
           >
 
@@ -1454,7 +1772,9 @@ function openProjectEditor(project) {
 
         <div class="field full">
 
-          <label>Description</label>
+          <label>
+            説明
+          </label>
 
           <textarea
             id="projectDescription"
@@ -1479,7 +1799,7 @@ function openProjectEditor(project) {
           }
         >
 
-        Featured project
+        メインプロジェクトとして表示
 
       </label>
 
@@ -1496,7 +1816,7 @@ function openProjectEditor(project) {
           }
         >
 
-        Visible on website
+        サイトに公開
 
       </label>
 
@@ -1511,14 +1831,14 @@ function openProjectEditor(project) {
           id="applyProject"
           class="button primary"
         >
-          Apply
+          変更を適用
         </button>
 
         <button
           id="cancelProject"
           class="button"
         >
-          Cancel
+          戻る
         </button>
 
       </div>
@@ -1541,25 +1861,30 @@ function openProjectEditor(project) {
             "projectTitle"
           ).value;
 
+
         project.status =
           document.getElementById(
             "projectStatus"
           ).value;
+
 
         project.icon =
           document.getElementById(
             "projectIcon"
           ).value;
 
+
         project.url =
           document.getElementById(
             "projectUrl"
           ).value;
 
+
         project.github =
           document.getElementById(
             "projectGithub"
           ).value;
+
 
         project.tags =
           document
@@ -1574,20 +1899,24 @@ function openProjectEditor(project) {
             )
             .filter(Boolean);
 
+
         project.description =
           document.getElementById(
             "projectDescription"
           ).value;
+
 
         project.featured =
           document.getElementById(
             "projectFeatured"
           ).checked;
 
+
         project.enabled =
           document.getElementById(
             "projectEnabled"
           ).checked;
+
 
         markDirty();
 
@@ -1614,7 +1943,7 @@ function openProjectEditor(project) {
 
 
 /* =========================
-   UPDATES
+   更新情報
 ========================= */
 
 function renderUpdates() {
@@ -1627,10 +1956,12 @@ function renderUpdates() {
 
     <div class="page-heading">
 
-      <h2>Updates</h2>
+      <h2>
+        更新情報
+      </h2>
 
       <p>
-        Publish changelog entries without editing code.
+        アップデート情報や変更履歴を管理します。
       </p>
 
     </div>
@@ -1640,13 +1971,15 @@ function renderUpdates() {
 
       <div class="card-header">
 
-        <strong>Update Feed</strong>
+        <strong>
+          更新一覧
+        </strong>
 
         <button
           id="addUpdateButton"
           class="button primary small"
         >
-          + Add Update
+          ＋ 更新追加
         </button>
 
       </div>
@@ -1672,7 +2005,7 @@ function renderUpdates() {
 
     list.innerHTML =
       `<div class="empty">
-        No updates yet.
+        更新情報はまだありません。
       </div>`;
 
   }
@@ -1686,14 +2019,17 @@ function renderUpdates() {
           "div"
         );
 
+
       item.className =
         "editor-item";
+
 
       item.innerHTML = `
 
         <div class="drag-handle">
           ↗
         </div>
+
 
         <div class="item-main">
 
@@ -1715,18 +2051,19 @@ function renderUpdates() {
 
         </div>
 
+
         <div class="item-actions">
 
           <button
             class="editUpdate"
           >
-            Edit
+            編集
           </button>
 
           <button
             class="deleteUpdate"
           >
-            Delete
+            削除
           </button>
 
         </div>
@@ -1741,11 +2078,9 @@ function renderUpdates() {
         .addEventListener(
           "click",
           () => {
-
             openUpdateEditor(
               update
             );
-
           }
         );
 
@@ -1760,16 +2095,18 @@ function renderUpdates() {
 
             if (
               !confirm(
-                "Delete this update?"
+                "この更新情報を削除しますか？"
               )
             ) {
               return;
             }
 
+
             updates.splice(
               index,
               1
             );
+
 
             markDirty();
 
@@ -1798,7 +2135,7 @@ function renderUpdates() {
         const update = {
           id: makeId("update"),
           project: "",
-          title: "New Update",
+          title: "新しい更新情報",
           description: "",
           version: "",
           date: new Date()
@@ -1808,7 +2145,11 @@ function renderUpdates() {
           enabled: true
         };
 
-        updates.unshift(update);
+
+        updates.unshift(
+          update
+        );
+
 
         markDirty();
 
@@ -1822,13 +2163,17 @@ function renderUpdates() {
 }
 
 
-function openUpdateEditor(update) {
+function openUpdateEditor(
+  update
+) {
 
   pageContent.innerHTML = `
 
     <div class="page-heading">
 
-      <h2>Edit Update</h2>
+      <h2>
+        更新情報を編集
+      </h2>
 
     </div>
 
@@ -1839,7 +2184,9 @@ function openUpdateEditor(update) {
 
         <div class="field">
 
-          <label>Project</label>
+          <label>
+            対象プロジェクト
+          </label>
 
           <input
             id="updateProject"
@@ -1853,7 +2200,9 @@ function openUpdateEditor(update) {
 
         <div class="field">
 
-          <label>Date</label>
+          <label>
+            日付
+          </label>
 
           <input
             id="updateDate"
@@ -1867,7 +2216,9 @@ function openUpdateEditor(update) {
 
         <div class="field">
 
-          <label>Version</label>
+          <label>
+            バージョン
+          </label>
 
           <input
             id="updateVersion"
@@ -1881,7 +2232,9 @@ function openUpdateEditor(update) {
 
         <div class="field">
 
-          <label>Title</label>
+          <label>
+            タイトル
+          </label>
 
           <input
             id="updateTitle"
@@ -1895,7 +2248,9 @@ function openUpdateEditor(update) {
 
         <div class="field full">
 
-          <label>Description</label>
+          <label>
+            説明
+          </label>
 
           <textarea
             id="updateDescription"
@@ -1918,14 +2273,14 @@ function openUpdateEditor(update) {
           id="applyUpdate"
           class="button primary"
         >
-          Apply
+          変更を適用
         </button>
 
         <button
           id="cancelUpdate"
           class="button"
         >
-          Cancel
+          戻る
         </button>
 
       </div>
@@ -1948,25 +2303,30 @@ function openUpdateEditor(update) {
             "updateProject"
           ).value;
 
+
         update.date =
           document.getElementById(
             "updateDate"
           ).value;
+
 
         update.version =
           document.getElementById(
             "updateVersion"
           ).value;
 
+
         update.title =
           document.getElementById(
             "updateTitle"
           ).value;
 
+
         update.description =
           document.getElementById(
             "updateDescription"
           ).value;
+
 
         markDirty();
 
@@ -1993,7 +2353,7 @@ function openUpdateEditor(update) {
 
 
 /* =========================
-   LINKS
+   リンク
 ========================= */
 
 function renderLinks() {
@@ -2006,11 +2366,12 @@ function renderLinks() {
 
     <div class="page-heading">
 
-      <h2>Links</h2>
+      <h2>
+        リンク
+      </h2>
 
       <p>
-        Manage reusable links for buttons,
-        cards and future sections.
+        ボタンやカードなどで使用するリンクを管理します。
       </p>
 
     </div>
@@ -2020,13 +2381,15 @@ function renderLinks() {
 
       <div class="card-header">
 
-        <strong>Link Library</strong>
+        <strong>
+          リンク一覧
+        </strong>
 
         <button
           id="addLinkButton"
           class="button primary small"
         >
-          + Add Link
+          ＋ リンク追加
         </button>
 
       </div>
@@ -2052,7 +2415,7 @@ function renderLinks() {
 
     list.innerHTML =
       `<div class="empty">
-        No links yet.
+        リンクはまだありません。
       </div>`;
 
   }
@@ -2066,14 +2429,17 @@ function renderLinks() {
           "div"
         );
 
+
       item.className =
         "editor-item";
+
 
       item.innerHTML = `
 
         <div class="drag-handle">
           ↗
         </div>
+
 
         <div class="item-main">
 
@@ -2091,18 +2457,19 @@ function renderLinks() {
 
         </div>
 
+
         <div class="item-actions">
 
           <button
             class="editLink"
           >
-            Edit
+            編集
           </button>
 
           <button
             class="deleteLink"
           >
-            Delete
+            削除
           </button>
 
         </div>
@@ -2117,7 +2484,9 @@ function renderLinks() {
         .addEventListener(
           "click",
           () => {
-            openLinkEditor(link);
+            openLinkEditor(
+              link
+            );
           }
         );
 
@@ -2161,17 +2530,23 @@ function renderLinks() {
 
         const link = {
           id: makeId("link"),
-          label: "New Link",
+          label: "新しいリンク",
           url: "",
           newTab: true,
           enabled: true
         };
 
-        links.push(link);
+
+        links.push(
+          link
+        );
+
 
         markDirty();
 
-        openLinkEditor(link);
+        openLinkEditor(
+          link
+        );
 
       }
     );
@@ -2179,12 +2554,18 @@ function renderLinks() {
 }
 
 
-function openLinkEditor(link) {
+function openLinkEditor(
+  link
+) {
 
   pageContent.innerHTML = `
 
     <div class="page-heading">
-      <h2>Edit Link</h2>
+
+      <h2>
+        リンクを編集
+      </h2>
+
     </div>
 
 
@@ -2194,7 +2575,9 @@ function openLinkEditor(link) {
 
         <div class="field">
 
-          <label>Label</label>
+          <label>
+            表示名
+          </label>
 
           <input
             id="linkLabel"
@@ -2208,7 +2591,9 @@ function openLinkEditor(link) {
 
         <div class="field">
 
-          <label>URL</label>
+          <label>
+            URL
+          </label>
 
           <input
             id="linkUrl"
@@ -2234,7 +2619,7 @@ function openLinkEditor(link) {
           }
         >
 
-        Open in new tab
+        新しいタブで開く
 
       </label>
 
@@ -2249,14 +2634,14 @@ function openLinkEditor(link) {
           id="applyLink"
           class="button primary"
         >
-          Apply
+          変更を適用
         </button>
 
         <button
           id="cancelLink"
           class="button"
         >
-          Cancel
+          戻る
         </button>
 
       </div>
@@ -2279,15 +2664,18 @@ function openLinkEditor(link) {
             "linkLabel"
           ).value;
 
+
         link.url =
           document.getElementById(
             "linkUrl"
           ).value;
 
+
         link.newTab =
           document.getElementById(
             "linkNewTab"
           ).checked;
+
 
         markDirty();
 
@@ -2314,7 +2702,7 @@ function openLinkEditor(link) {
 
 
 /* =========================
-   EMBEDS
+   埋め込み
 ========================= */
 
 function renderEmbeds() {
@@ -2327,10 +2715,12 @@ function renderEmbeds() {
 
     <div class="page-heading">
 
-      <h2>Embeds</h2>
+      <h2>
+        埋め込み
+      </h2>
 
       <p>
-        Add external websites or tools through iframe embeds.
+        URLを貼り付けるだけで外部コンテンツを追加できます。
       </p>
 
     </div>
@@ -2340,13 +2730,15 @@ function renderEmbeds() {
 
       <div class="card-header">
 
-        <strong>Embed Library</strong>
+        <strong>
+          埋め込み一覧
+        </strong>
 
         <button
           id="addEmbedButton"
           class="button primary small"
         >
-          + Add Embed
+          ＋ 埋め込み追加
         </button>
 
       </div>
@@ -2372,7 +2764,8 @@ function renderEmbeds() {
 
     list.innerHTML =
       `<div class="empty">
-        No embeds yet.
+        埋め込みはまだありません。<br>
+        「＋ 埋め込み追加」からURLを追加できます。
       </div>`;
 
   }
@@ -2386,14 +2779,17 @@ function renderEmbeds() {
           "div"
         );
 
+
       item.className =
         "editor-item";
+
 
       item.innerHTML = `
 
         <div class="drag-handle">
           ▤
         </div>
+
 
         <div class="item-main">
 
@@ -2411,18 +2807,19 @@ function renderEmbeds() {
 
         </div>
 
+
         <div class="item-actions">
 
           <button
             class="editEmbed"
           >
-            Edit
+            編集
           </button>
 
           <button
             class="deleteEmbed"
           >
-            Delete
+            削除
           </button>
 
         </div>
@@ -2437,7 +2834,9 @@ function renderEmbeds() {
         .addEventListener(
           "click",
           () => {
-            openEmbedEditor(embed);
+            openEmbedEditor(
+              embed
+            );
           }
         );
 
@@ -2481,18 +2880,24 @@ function renderEmbeds() {
 
         const embed = {
           id: makeId("embed"),
-          title: "New Embed",
+          title: "新しい埋め込み",
           url: "",
           width: "100%",
           height: "420",
           enabled: true
         };
 
-        embeds.push(embed);
+
+        embeds.push(
+          embed
+        );
+
 
         markDirty();
 
-        openEmbedEditor(embed);
+        openEmbedEditor(
+          embed
+        );
 
       }
     );
@@ -2500,17 +2905,20 @@ function renderEmbeds() {
 }
 
 
-function openEmbedEditor(embed) {
+function openEmbedEditor(
+  embed
+) {
 
   pageContent.innerHTML = `
 
     <div class="page-heading">
 
-      <h2>Edit Embed</h2>
+      <h2>
+        埋め込みを編集
+      </h2>
 
       <p>
-        Paste a URL and it can be rendered as an iframe
-        by the website renderer.
+        外部ページのURLを指定します。
       </p>
 
     </div>
@@ -2522,7 +2930,9 @@ function openEmbedEditor(embed) {
 
         <div class="field">
 
-          <label>Title</label>
+          <label>
+            タイトル
+          </label>
 
           <input
             id="embedTitle"
@@ -2536,13 +2946,16 @@ function openEmbedEditor(embed) {
 
         <div class="field">
 
-          <label>URL</label>
+          <label>
+            URL
+          </label>
 
           <input
             id="embedUrl"
             value="${escapeHtml(
               embed.url || ""
             )}"
+            placeholder="https://example.com"
           >
 
         </div>
@@ -2550,12 +2963,15 @@ function openEmbedEditor(embed) {
 
         <div class="field">
 
-          <label>Width</label>
+          <label>
+            横幅
+          </label>
 
           <input
             id="embedWidth"
             value="${escapeHtml(
-              embed.width || "100%"
+              embed.width ||
+              "100%"
             )}"
           >
 
@@ -2564,12 +2980,15 @@ function openEmbedEditor(embed) {
 
         <div class="field">
 
-          <label>Height</label>
+          <label>
+            高さ
+          </label>
 
           <input
             id="embedHeight"
             value="${escapeHtml(
-              embed.height || "420"
+              embed.height ||
+              "420"
             )}"
           >
 
@@ -2590,7 +3009,7 @@ function openEmbedEditor(embed) {
           }
         >
 
-        Enabled
+        サイトに表示する
 
       </label>
 
@@ -2605,14 +3024,14 @@ function openEmbedEditor(embed) {
           id="applyEmbed"
           class="button primary"
         >
-          Apply
+          変更を適用
         </button>
 
         <button
           id="cancelEmbed"
           class="button"
         >
-          Cancel
+          戻る
         </button>
 
       </div>
@@ -2635,25 +3054,30 @@ function openEmbedEditor(embed) {
             "embedTitle"
           ).value;
 
+
         embed.url =
           document.getElementById(
             "embedUrl"
           ).value;
+
 
         embed.width =
           document.getElementById(
             "embedWidth"
           ).value;
 
+
         embed.height =
           document.getElementById(
             "embedHeight"
           ).value;
 
+
         embed.enabled =
           document.getElementById(
             "embedEnabled"
           ).checked;
+
 
         markDirty();
 
@@ -2680,23 +3104,27 @@ function openEmbedEditor(embed) {
 
 
 /* =========================
-   NAVIGATION
+   ナビゲーション
 ========================= */
 
 function renderNavigation() {
 
   const navigation =
-    getArray("navigation");
+    getArray(
+      "navigation"
+    );
 
 
   pageContent.innerHTML = `
 
     <div class="page-heading">
 
-      <h2>Navigation</h2>
+      <h2>
+        ナビゲーション
+      </h2>
 
       <p>
-        Edit the links displayed in the website header.
+        ホームページ上部のメニューを管理します。
       </p>
 
     </div>
@@ -2706,13 +3134,15 @@ function renderNavigation() {
 
       <div class="card-header">
 
-        <strong>Header Links</strong>
+        <strong>
+          メニュー一覧
+        </strong>
 
         <button
           id="addNavButton"
           class="button primary small"
         >
-          + Add Link
+          ＋ リンク追加
         </button>
 
       </div>
@@ -2742,14 +3172,17 @@ function renderNavigation() {
           "div"
         );
 
+
       item.className =
         "editor-item";
+
 
       item.innerHTML = `
 
         <div class="drag-handle">
           ☰
         </div>
+
 
         <div class="item-main">
 
@@ -2767,6 +3200,7 @@ function renderNavigation() {
 
         </div>
 
+
         <div class="item-actions">
 
           <button
@@ -2774,21 +3208,23 @@ function renderNavigation() {
           >
             ${
               nav.enabled !== false
-                ? "Enabled"
-                : "Disabled"
+                ? "表示中"
+                : "非表示"
             }
           </button>
+
 
           <button
             class="editNav"
           >
-            Edit
+            編集
           </button>
+
 
           <button
             class="deleteNav"
           >
-            Delete
+            削除
           </button>
 
         </div>
@@ -2824,7 +3260,9 @@ function renderNavigation() {
         .addEventListener(
           "click",
           () => {
-            openNavigationEditor(nav);
+            openNavigationEditor(
+              nav
+            );
           }
         );
 
@@ -2852,7 +3290,9 @@ function renderNavigation() {
         );
 
 
-      list.appendChild(item);
+      list.appendChild(
+        item
+      );
 
     }
   );
@@ -2868,17 +3308,23 @@ function renderNavigation() {
 
         const nav = {
           id: makeId("nav"),
-          label: "New Link",
+          label: "新しいリンク",
           href: "#",
           enabled: true,
           newTab: false
         };
 
-        navigation.push(nav);
+
+        navigation.push(
+          nav
+        );
+
 
         markDirty();
 
-        openNavigationEditor(nav);
+        openNavigationEditor(
+          nav
+        );
 
       }
     );
@@ -2886,13 +3332,17 @@ function renderNavigation() {
 }
 
 
-function openNavigationEditor(nav) {
+function openNavigationEditor(
+  nav
+) {
 
   pageContent.innerHTML = `
 
     <div class="page-heading">
 
-      <h2>Edit Navigation Link</h2>
+      <h2>
+        ナビゲーションを編集
+      </h2>
 
     </div>
 
@@ -2903,7 +3353,9 @@ function openNavigationEditor(nav) {
 
         <div class="field">
 
-          <label>Label</label>
+          <label>
+            表示名
+          </label>
 
           <input
             id="navLabel"
@@ -2917,7 +3369,9 @@ function openNavigationEditor(nav) {
 
         <div class="field">
 
-          <label>URL</label>
+          <label>
+            URL
+          </label>
 
           <input
             id="navHref"
@@ -2943,7 +3397,7 @@ function openNavigationEditor(nav) {
           }
         >
 
-        Open in new tab
+        新しいタブで開く
 
       </label>
 
@@ -2958,14 +3412,14 @@ function openNavigationEditor(nav) {
           id="applyNav"
           class="button primary"
         >
-          Apply
+          変更を適用
         </button>
 
         <button
           id="cancelNav"
           class="button"
         >
-          Cancel
+          戻る
         </button>
 
       </div>
@@ -2988,15 +3442,18 @@ function openNavigationEditor(nav) {
             "navLabel"
           ).value;
 
+
         nav.href =
           document.getElementById(
             "navHref"
           ).value;
 
+
         nav.newTab =
           document.getElementById(
             "navNewTab"
           ).checked;
+
 
         markDirty();
 
@@ -3023,7 +3480,7 @@ function openNavigationEditor(nav) {
 
 
 /* =========================
-   SETTINGS
+   設定
 ========================= */
 
 function renderSettings() {
@@ -3036,10 +3493,12 @@ function renderSettings() {
 
     <div class="page-heading">
 
-      <h2>Site Settings</h2>
+      <h2>
+        サイト設定
+      </h2>
 
       <p>
-        Global website behaviour.
+        サイト全体の表示に関する設定です。
       </p>
 
     </div>
@@ -3051,12 +3510,15 @@ function renderSettings() {
 
         <div class="field">
 
-          <label>Footer Text</label>
+          <label>
+            フッター文字
+          </label>
 
           <input
             id="footerText"
             value="${escapeHtml(
-              settings.footerText || ""
+              settings.footerText ||
+              ""
             )}"
           >
 
@@ -3065,9 +3527,13 @@ function renderSettings() {
 
         <div class="field">
 
-          <label>Accent</label>
+          <label>
+            アクセント
+          </label>
 
-          <select id="accentSelect">
+          <select
+            id="accentSelect"
+          >
 
             <option value="default">
               Default
@@ -3092,7 +3558,7 @@ function renderSettings() {
           }
         >
 
-        Show Footer
+        フッターを表示
 
       </label>
 
@@ -3109,7 +3575,7 @@ function renderSettings() {
           }
         >
 
-        Show GitHub CTA
+        GitHub案内を表示
 
       </label>
 
@@ -3121,8 +3587,10 @@ function renderSettings() {
   bindInput(
     "footerText",
     (value) => {
+
       settings.footerText =
         value;
+
     }
   );
 
@@ -3168,39 +3636,7 @@ function renderSettings() {
 
 
 /* =========================
-   INPUT BINDING
-========================= */
-
-function bindInput(id, callback) {
-
-  const element =
-    document.getElementById(id);
-
-  if (!element) {
-    return;
-  }
-
-
-  element.addEventListener(
-    "input",
-    (event) => {
-
-      callback(
-        event.target.value
-      );
-
-      markDirty();
-
-      renderPreview();
-
-    }
-  );
-
-}
-
-
-/* =========================
-   PREVIEW
+   プレビュー
 ========================= */
 
 function renderPreview() {
@@ -3209,9 +3645,6 @@ function renderPreview() {
     return;
   }
 
-
-  const site =
-    siteData.site;
 
   const sections =
     getArray("sections")
@@ -3227,42 +3660,75 @@ function renderPreview() {
   sections.forEach(
     (section) => {
 
-      switch (section.type) {
+      switch (
+        section.type
+      ) {
 
         case "hero":
-          html += renderPreviewHero(
-            section
-          );
+
+          html +=
+            renderPreviewHero(
+              section
+            );
+
           break;
+
 
         case "stats":
-          html += renderPreviewStats();
+
+          html +=
+            renderPreviewStats();
+
           break;
+
 
         case "projects":
-          html += renderPreviewProjects();
+
+          html +=
+            renderPreviewProjects();
+
           break;
+
 
         case "updates":
-          html += renderPreviewUpdates();
+
+          html +=
+            renderPreviewUpdates();
+
           break;
+
 
         case "embeds":
-          html += renderPreviewEmbeds();
+
+          html +=
+            renderPreviewEmbeds();
+
           break;
+
 
         case "links":
-          html += renderPreviewLinks();
+
+          html +=
+            renderPreviewLinks();
+
           break;
+
 
         case "github":
-          html += renderPreviewGithub();
+
+          html +=
+            renderPreviewGithub();
+
           break;
 
+
         case "text":
-          html += renderPreviewText(
-            section
-          );
+
+          html +=
+            renderPreviewText(
+              section
+            );
+
           break;
 
       }
@@ -3271,11 +3737,15 @@ function renderPreview() {
   );
 
 
-  previewContent.innerHTML = html;
+  previewContent.innerHTML =
+    html;
+
 }
 
 
-function renderPreviewHero(section) {
+function renderPreviewHero(
+  section
+) {
 
   return `
 
@@ -3285,12 +3755,14 @@ function renderPreviewHero(section) {
         INDIE DEVELOPER
       </div>
 
+
       <h1>
         ${escapeHtml(
           section.title ||
           siteData.site.tagline
         )}
       </h1>
+
 
       <p>
         ${escapeHtml(
@@ -3302,6 +3774,7 @@ function renderPreviewHero(section) {
     </div>
 
   `;
+
 }
 
 
@@ -3324,7 +3797,10 @@ function renderPreviewStats() {
 
     <div class="preview-block">
 
-      <h3>Quick Stats</h3>
+      <h3>
+        Quick Stats
+      </h3>
+
 
       <div class="preview-stat-grid">
 
@@ -3339,6 +3815,7 @@ function renderPreviewStats() {
                     stat.label
                   )}
                 </span>
+
 
                 <strong>
                   ${escapeHtml(
@@ -3357,6 +3834,7 @@ function renderPreviewStats() {
     </div>
 
   `;
+
 }
 
 
@@ -3379,7 +3857,10 @@ function renderPreviewProjects() {
 
     <div class="preview-block">
 
-      <h3>Projects</h3>
+      <h3>
+        Projects
+      </h3>
+
 
       ${projects
         .map(
@@ -3392,6 +3873,7 @@ function renderPreviewProjects() {
                   project.title
                 )}
               </strong>
+
 
               <p>
                 ${escapeHtml(
@@ -3408,6 +3890,7 @@ function renderPreviewProjects() {
     </div>
 
   `;
+
 }
 
 
@@ -3430,7 +3913,10 @@ function renderPreviewUpdates() {
 
     <div class="preview-block">
 
-      <h3>What's New</h3>
+      <h3>
+        What's New
+      </h3>
+
 
       ${updates
         .slice(0, 3)
@@ -3454,6 +3940,7 @@ function renderPreviewUpdates() {
     </div>
 
   `;
+
 }
 
 
@@ -3485,6 +3972,7 @@ function renderPreviewEmbeds() {
             )}
           </h3>
 
+
           <div class="preview-embed">
 
             <iframe
@@ -3504,6 +3992,7 @@ function renderPreviewEmbeds() {
       `
     )
     .join("");
+
 }
 
 
@@ -3526,7 +4015,10 @@ function renderPreviewLinks() {
 
     <div class="preview-block">
 
-      <h3>Links</h3>
+      <h3>
+        Links
+      </h3>
+
 
       ${links
         .map(
@@ -3539,6 +4031,7 @@ function renderPreviewLinks() {
                   link.label
                 )}
               </strong>
+
 
               <p>
                 ${escapeHtml(
@@ -3555,6 +4048,7 @@ function renderPreviewLinks() {
     </div>
 
   `;
+
 }
 
 
@@ -3564,7 +4058,10 @@ function renderPreviewGithub() {
 
     <div class="preview-block">
 
-      <h3>Open Source</h3>
+      <h3>
+        Open Source
+      </h3>
+
 
       <div class="preview-project">
 
@@ -3575,8 +4072,9 @@ function renderPreviewGithub() {
           )}
         </strong>
 
+
         <p>
-          Source code and projects.
+          公開プロジェクトとソースコード。
         </p>
 
       </div>
@@ -3584,10 +4082,13 @@ function renderPreviewGithub() {
     </div>
 
   `;
+
 }
 
 
-function renderPreviewText(section) {
+function renderPreviewText(
+  section
+) {
 
   return `
 
@@ -3600,25 +4101,28 @@ function renderPreviewText(section) {
         )}
       </h3>
 
+
       <p style="
         margin:0;
         color:#777e87;
-        font-size:9px;
+        font-size:8px;
         line-height:1.7;
       ">
         ${escapeHtml(
-          section.description || ""
+          section.description ||
+          ""
         )}
       </p>
 
     </div>
 
   `;
+
 }
 
 
 /* =========================
-   SAVE
+   保存
 ========================= */
 
 saveButton.addEventListener(
@@ -3639,13 +4143,15 @@ async function saveData() {
 
 
   saveState.textContent =
-    "Saving...";
+    "保存中...";
+
 
   saveState.className =
     "save-state saving";
 
 
-  saveButton.disabled = true;
+  saveButton.disabled =
+    true;
 
 
   try {
@@ -3666,11 +4172,13 @@ async function saveData() {
 
           body: JSON.stringify({
             file: "site-data.json",
-            content: JSON.stringify(
-              siteData,
-              null,
-              2
-            )
+
+            content:
+              JSON.stringify(
+                siteData,
+                null,
+                2
+              )
           })
         }
       );
@@ -3681,21 +4189,25 @@ async function saveData() {
 
 
     if (!response.ok) {
+
       throw new Error(
         result.message ||
         result.error ||
         `HTTP ${response.status}`
       );
+
     }
 
 
     savedSnapshot =
       clone(siteData);
 
+
     markSaved();
 
+
     showToast(
-      "Changes saved successfully."
+      "保存しました。"
     );
 
 
@@ -3703,21 +4215,24 @@ async function saveData() {
 
     console.error(error);
 
+
     saveState.textContent =
-      "Save failed";
+      "保存失敗";
+
 
     saveState.className =
       "save-state dirty";
 
 
     showToast(
-      `Save failed: ${error.message}`
+      `保存に失敗しました: ${error.message}`
     );
 
 
   } finally {
 
-    saveButton.disabled = false;
+    saveButton.disabled =
+      false;
 
   }
 
@@ -3725,7 +4240,7 @@ async function saveData() {
 
 
 /* =========================
-   RESET
+   ショートカット
 ========================= */
 
 document.addEventListener(
@@ -3735,7 +4250,8 @@ document.addEventListener(
     if (
       (event.ctrlKey ||
        event.metaKey) &&
-      event.key.toLowerCase() === "s"
+      event.key.toLowerCase() ===
+        "s"
     ) {
 
       event.preventDefault();
@@ -3749,7 +4265,7 @@ document.addEventListener(
 
 
 /* =========================
-   LOGOUT
+   ログアウト
 ========================= */
 
 document
@@ -3764,24 +4280,28 @@ document
         "maru_admin_token"
       );
 
+
       sessionStorage.removeItem(
         "maru_admin_expires"
       );
 
-      window.location.href = "./";
+
+      window.location.href =
+        "./";
 
     }
   );
 
 
 /* =========================
-   HELP
+   操作説明
 ========================= */
 
 const helpModal =
   document.getElementById(
     "helpModal"
   );
+
 
 document
   .getElementById(
@@ -3832,7 +4352,7 @@ helpModal
 
 
 /* =========================
-   PREVIEW REFRESH
+   プレビュー更新
 ========================= */
 
 document
@@ -3846,7 +4366,7 @@ document
       renderPreview();
 
       showToast(
-        "Preview refreshed."
+        "プレビューを更新しました。"
       );
 
     }
@@ -3854,7 +4374,7 @@ document
 
 
 /* =========================
-   UNSAVED WARNING
+   未保存警告
 ========================= */
 
 window.addEventListener(
@@ -3878,7 +4398,7 @@ window.addEventListener(
 
 
 /* =========================
-   INIT
+   起動
 ========================= */
 
 if (requireAuth()) {
