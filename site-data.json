@@ -1,8 +1,172 @@
 {
-  "siteName": "maru_m4ru_maru",
-  "tagline": "Scratchで活動しています",
-  "description": "maru_m4ru_maru が制作しているツール・サービス・プロジェクトを紹介しています。",
-  "addonsVersion": "1.4.5",
-  "addonsUpdate": "60FPS機能を追加し、表示を整理しました。",
-  "updateDate": "2026.09.02"
+  "site": {
+    "name": "maru_m4ru_maru",
+    "tagline": "ScratchやWebを、もっと便利に。",
+    "description": "maru_m4ru_maru が制作しているツール・サービス・プロジェクトを紹介しています。",
+    "avatar": "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png",
+    "github": "https://github.com/maru-m4ru-maru"
+  },
+
+  "navigation": [
+    {
+      "id": "nav-projects",
+      "label": "Projects",
+      "href": "#projects",
+      "enabled": true,
+      "newTab": false
+    },
+    {
+      "id": "nav-updates",
+      "label": "Updates",
+      "href": "#updates",
+      "enabled": true,
+      "newTab": false
+    },
+    {
+      "id": "nav-github",
+      "label": "GitHub",
+      "href": "https://github.com/maru-m4ru-maru",
+      "enabled": true,
+      "newTab": true
+    }
+  ],
+
+  "stats": [
+    {
+      "id": "stat-featured",
+      "label": "Featured",
+      "value": "まる Addons",
+      "meta": "Scratch enhancement",
+      "enabled": true
+    },
+    {
+      "id": "stat-version",
+      "label": "Current Version",
+      "value": "v1.4.5",
+      "meta": "Latest release",
+      "enabled": true
+    },
+    {
+      "id": "stat-focus",
+      "label": "Focus",
+      "value": "Tools & Apps",
+      "meta": "Scratch × Web",
+      "enabled": true
+    },
+    {
+      "id": "stat-status",
+      "label": "Status",
+      "value": "Building",
+      "meta": "Always improving",
+      "enabled": true
+    }
+  ],
+
+  "projects": [
+    {
+      "id": "project-addons",
+      "title": "まる Addons",
+      "description": "Scratch / TurboWarp をより便利にするためのツール。",
+      "status": "Active",
+      "tags": [
+        "Scratch",
+        "JavaScript",
+        "TurboWarp"
+      ],
+      "url": "https://maru-scratch-addon.maru-0727.workers.dev/",
+      "github": "https://github.com/maru-m4ru-maru/maru-addons",
+      "icon": "MA",
+      "featured": true,
+      "enabled": true
+    },
+    {
+      "id": "project-hub",
+      "title": "Project Hub",
+      "description": "Scratchユーザー向けの共同制作プラットフォーム。",
+      "status": "In Development",
+      "tags": [
+        "TurboWarp",
+        "React",
+        "Supabase"
+      ],
+      "url": "",
+      "github": "",
+      "icon": "PH",
+      "featured": false,
+      "enabled": true
+    },
+    {
+      "id": "project-webviewer",
+      "title": "Web Viewer",
+      "description": "Webコンテンツをより柔軟に扱うためのツールプロジェクト。",
+      "status": "Prototype",
+      "tags": [
+        "JavaScript",
+        "Cloudflare",
+        "Web"
+      ],
+      "url": "",
+      "github": "",
+      "icon": "WV",
+      "featured": false,
+      "enabled": true
+    }
+  ],
+
+  "updates": [
+    {
+      "id": "update-addons-145",
+      "project": "まる Addons",
+      "title": "60FPS機能を追加し、表示を整理しました。",
+      "description": "最新バージョンのアップデートです。",
+      "version": "v1.4.5",
+      "date": "2026.09.02",
+      "enabled": true
+    }
+  ],
+
+  "embeds": [],
+
+  "links": [],
+
+  "sections": [
+    {
+      "id": "section-hero",
+      "type": "hero",
+      "title": "ScratchやWebを、もっと便利に。",
+      "description": "maru_m4ru_maru が制作しているツール・サービス・プロジェクトを紹介しています。",
+      "enabled": true
+    },
+    {
+      "id": "section-stats",
+      "type": "stats",
+      "title": "Quick Stats",
+      "enabled": true
+    },
+    {
+      "id": "section-projects",
+      "type": "projects",
+      "title": "Projects",
+      "enabled": true
+    },
+    {
+      "id": "section-updates",
+      "type": "updates",
+      "title": "What's New",
+      "enabled": true
+    },
+    {
+      "id": "section-github",
+      "type": "github",
+      "title": "Open Source",
+      "enabled": true
+    }
+  ],
+
+  "settings": {
+    "showFooter": true,
+    "showGitHubCTA": true,
+    "footerText": "Built by maru_m4ru_maru",
+    "accent": "default"
+  }
 }
