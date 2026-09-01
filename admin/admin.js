@@ -19,61 +19,73 @@
   const message =
     document.getElementById("message");
 
-  form.addEventListener("submit", async event => {
-    event.preventDefault();
+  form.addEventListener(
+    "submit",
+    async event => {
+      event.preventDefault();
 
-    message.textContent = "";
-    button.disabled = true;
-    button.textContent = "確認中...";
+      message.textContent = "";
 
-    try {
-      const response = await fetch(
-        `${WORKER_URL}/admin/login`,
-        {
-          method: "POST",
+      button.disabled = true;
+      button.textContent = "確認中...";
 
-          headers: {
-            "Content-Type": "application/json"
-          },
+      try {
+        const response =
+          await fetch(
+            `${WORKER_URL}/admin/login`,
+            {
+              method: "POST",
 
-          body: JSON.stringify({
-            password1: password1.value,
-            password2: password2.value
-          })
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+                password1:
+                  password1.value,
+
+                password2:
+                  password2.value
+              })
+            }
+          );
+
+        const data =
+          await response.json();
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+          throw new Error(
+            data.message ||
+            "ログインに失敗しました"
+          );
         }
-      );
 
-      const data =
-        await response.json();
-
-      if (!response.ok || !data.success) {
-        throw new Error(
-          data.message ||
-          "ログインに失敗しました"
+        sessionStorage.setItem(
+          "maru_admin_authenticated",
+          "1"
         );
+
+        window.location.href =
+          "./panel.html";
+
+      } catch (error) {
+        console.error(
+          "[Maru Admin]",
+          error
+        );
+
+        message.textContent =
+          error.message ||
+          "ログインに失敗しました";
+
+      } finally {
+        button.disabled = false;
+        button.textContent = "ログイン";
       }
-
-      sessionStorage.setItem(
-        "maru_admin_authenticated",
-        "1"
-      );
-
-      window.location.href =
-        "./panel.html";
-
-    } catch (error) {
-      console.error(
-        "[Maru Admin]",
-        error
-      );
-
-      message.textContent =
-        error.message ||
-        "ログインに失敗しました";
-
-    } finally {
-      button.disabled = false;
-      button.textContent = "ログイン";
     }
-  });
+  );
 })();
