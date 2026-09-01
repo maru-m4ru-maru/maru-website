@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
-
+<html lang="en">
 <head>
   <meta charset="UTF-8">
 
@@ -9,53 +8,19 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>
-    Admin - maru_m4ru_maru
-  </title>
+  <title>Admin Panel - maru_website</title>
 
   <link
     rel="stylesheet"
-    href="admin.css"
+    href="./admin.css"
   >
 </head>
 
 <body>
 
-  <script>
-    const token =
-      sessionStorage.getItem(
-        "maru_admin_token"
-      );
-
-    const expires =
-      Number(
-        sessionStorage.getItem(
-          "maru_admin_expires"
-        )
-      );
-
-    if (
-      !token ||
-      !expires ||
-      Date.now() >= expires
-    ) {
-      sessionStorage.removeItem(
-        "maru_admin_token"
-      );
-
-      sessionStorage.removeItem(
-        "maru_admin_expires"
-      );
-
-      window.location.replace("./");
-    }
-  </script>
-
-
   <div class="app">
 
     <!-- SIDEBAR -->
-
     <aside class="sidebar">
 
       <div class="sidebar-brand">
@@ -65,13 +30,8 @@
         </div>
 
         <div>
-          <strong>
-            maru website
-          </strong>
-
-          <span>
-            Admin Console
-          </span>
+          <strong>maru_website</strong>
+          <span>Admin Console</span>
         </div>
 
       </div>
@@ -81,41 +41,82 @@
 
         <button
           class="nav-item active"
-          data-section="overview"
-          type="button"
+          data-page="overview"
         >
-          <span class="nav-icon">⌂</span>
+          <span>⌂</span>
           Overview
         </button>
 
-
         <button
           class="nav-item"
-          data-section="site"
-          type="button"
+          data-page="site"
         >
-          <span class="nav-icon">◼</span>
+          <span>◉</span>
           Site
         </button>
 
-
         <button
           class="nav-item"
-          data-section="addons"
-          type="button"
+          data-page="pages"
         >
-          <span class="nav-icon">◆</span>
-          Addons
+          <span>▣</span>
+          Pages
         </button>
 
+        <button
+          class="nav-item"
+          data-page="sections"
+        >
+          <span>☷</span>
+          Sections
+        </button>
 
         <button
           class="nav-item"
-          data-section="updates"
-          type="button"
+          data-page="projects"
         >
-          <span class="nav-icon">↻</span>
+          <span>◆</span>
+          Projects
+        </button>
+
+        <button
+          class="nav-item"
+          data-page="updates"
+        >
+          <span>↗</span>
           Updates
+        </button>
+
+        <button
+          class="nav-item"
+          data-page="links"
+        >
+          <span>↗</span>
+          Links
+        </button>
+
+        <button
+          class="nav-item"
+          data-page="embeds"
+        >
+          <span>▤</span>
+          Embeds
+        </button>
+
+        <button
+          class="nav-item"
+          data-page="navigation"
+        >
+          <span>≡</span>
+          Navigation
+        </button>
+
+        <button
+          class="nav-item"
+          data-page="settings"
+        >
+          <span>⚙</span>
+          Site Settings
         </button>
 
       </nav>
@@ -123,21 +124,18 @@
 
       <div class="sidebar-bottom">
 
-        <a
-          href="../"
-          target="_blank"
-          class="sidebar-link"
+        <button
+          id="helpButton"
+          class="sidebar-small-button"
         >
-          ↗ View Website
-        </a>
-
+          ? 操作説明
+        </button>
 
         <button
-          id="logout"
-          class="sidebar-link logout"
-          type="button"
+          id="logoutButton"
+          class="sidebar-small-button danger"
         >
-          ↪ Logout
+          Log out
         </button>
 
       </div>
@@ -146,52 +144,39 @@
 
 
     <!-- MAIN -->
-
     <main class="main">
 
+      <!-- TOPBAR -->
       <header class="topbar">
 
         <div>
+          <div
+            id="pageKicker"
+            class="topbar-kicker"
+          >
+            ADMIN
+          </div>
 
-          <h1 id="page-title">
+          <h1 id="pageTitle">
             Overview
           </h1>
-
-          <p id="page-description">
-            View the current website status.
-          </p>
-
         </div>
 
 
         <div class="topbar-actions">
 
-          <!-- 操作説明ボタン -->
-
-          <button
-            id="help-button"
-            class="secondary-button"
-            type="button"
-          >
-            ? 操作説明
-          </button>
-
-
           <div
-            id="save-indicator"
-            class="save-indicator saved"
+            id="saveState"
+            class="save-state saved"
           >
-            <span></span>
             Saved
           </div>
 
-
           <button
-            id="save-top"
-            class="primary-button"
-            type="button"
+            id="saveButton"
+            class="button primary"
           >
-            Save
+            Save Changes
           </button>
 
         </div>
@@ -199,668 +184,57 @@
       </header>
 
 
-      <!-- OVERVIEW -->
-
+      <!-- PAGE CONTENT -->
       <section
-        class="section active"
-        data-content="overview"
-      >
-
-        <div class="stats-grid">
-
-          <div class="stat-card">
-
-            <span class="stat-label">
-              SITE
-            </span>
-
-            <strong
-              id="stat-site-name"
-            >
-              —
-            </strong>
-
-            <small>
-              Site name
-            </small>
-
-          </div>
-
-
-          <div class="stat-card">
-
-            <span class="stat-label">
-              ADDONS
-            </span>
-
-            <strong
-              id="stat-version"
-            >
-              —
-            </strong>
-
-            <small>
-              Latest version
-            </small>
-
-          </div>
-
-
-          <div class="stat-card">
-
-            <span class="stat-label">
-              UPDATED
-            </span>
-
-            <strong
-              id="stat-date"
-            >
-              —
-            </strong>
-
-            <small>
-              Last updated
-            </small>
-
-          </div>
-
-        </div>
-
-
-        <div class="overview-grid">
-
-          <div class="panel-card">
-
-            <div class="panel-header">
-
-              <div>
-
-                <h2>
-                  Quick Edit
-                </h2>
-
-                <p>
-                  Edit the most frequently changed information here.
-                </p>
-
-              </div>
-
-            </div>
-
-
-            <div class="quick-form">
-
-              <div class="field">
-
-                <label for="quick-version">
-                  Latest version
-                </label>
-
-                <input
-                  id="quick-version"
-                  type="text"
-                >
-
-              </div>
-
-
-              <div class="field">
-
-                <label for="quick-update">
-                  Latest update
-                </label>
-
-                <textarea
-                  id="quick-update"
-                ></textarea>
-
-              </div>
-
-            </div>
-
-          </div>
-
-
-          <div class="preview-card">
-
-            <div class="preview-header">
-              <span>LIVE PREVIEW</span>
-              <span class="preview-dot"></span>
-            </div>
-
-
-            <div class="mini-preview">
-
-              <img
-                src="https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png"
-                alt=""
-              >
-
-
-              <div>
-
-                <strong
-                  id="preview-site-name"
-                >
-                  maru_m4ru_maru
-                </strong>
-
-
-                <p
-                  id="preview-tagline"
-                >
-                  ScratchやWebを、もっと便利に。
-                </p>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      <!-- SITE -->
-
-      <section
-        class="section"
-        data-content="site"
-      >
-
-        <div class="section-title">
-
-          <div>
-
-            <span>01</span>
-
-            <div>
-
-              <p>SITE</p>
-
-              <h2>
-                Site Information
-              </h2>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <div class="panel-card">
-
-          <div class="panel-header">
-
-            <div>
-
-              <h2>
-                Basic Information
-              </h2>
-
-              <p>
-                Edit the main information displayed on the website.
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div class="form-grid">
-
-            <div class="field full">
-
-              <label for="site-name">
-                Site name
-              </label>
-
-              <input
-                id="site-name"
-                type="text"
-                maxlength="100"
-                placeholder="maru_m4ru_maru"
-              >
-
-              <div class="field-meta">
-
-                <span>
-                  Name displayed on the website
-                </span>
-
-                <span id="site-name-count">
-                  0 / 100
-                </span>
-
-              </div>
-
-            </div>
-
-
-            <div class="field full">
-
-              <label for="tagline">
-                Tagline
-              </label>
-
-              <input
-                id="tagline"
-                type="text"
-                maxlength="200"
-                placeholder="ScratchやWebを、もっと便利に。"
-              >
-
-              <div class="field-meta">
-
-                <span>
-                  Main headline on the homepage
-                </span>
-
-                <span id="tagline-count">
-                  0 / 200
-                </span>
-
-              </div>
-
-            </div>
-
-
-            <div class="field full">
-
-              <label for="description">
-                Description
-              </label>
-
-              <textarea
-                id="description"
-                maxlength="1000"
-                placeholder="Website description..."
-              ></textarea>
-
-              <div class="field-meta">
-
-                <span>
-                  Website introduction
-                </span>
-
-                <span id="description-count">
-                  0 / 1000
-                </span>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      <!-- ADDONS -->
-
-      <section
-        class="section"
-        data-content="addons"
-      >
-
-        <div class="section-title">
-
-          <div>
-
-            <span>02</span>
-
-            <div>
-
-              <p>PROJECT</p>
-
-              <h2>
-                まる Addons
-              </h2>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <div class="panel-card">
-
-          <div class="panel-header">
-
-            <div>
-
-              <h2>
-                Project Information
-              </h2>
-
-              <p>
-                Edit the information displayed for まる Addons.
-              </p>
-
-            </div>
-
-          </div>
-
-
-          <div class="form-grid">
-
-            <div class="field">
-
-              <label for="addons-version">
-                Latest version
-              </label>
-
-              <input
-                id="addons-version"
-                type="text"
-                maxlength="30"
-                placeholder="1.4.5"
-              >
-
-            </div>
-
-
-            <div class="field">
-
-              <label for="update-date">
-                Update date
-              </label>
-
-              <input
-                id="update-date"
-                type="text"
-                maxlength="30"
-                placeholder="2026.09.02"
-              >
-
-            </div>
-
-
-            <div class="field full">
-
-              <label for="addons-update">
-                Latest update
-              </label>
-
-              <textarea
-                id="addons-update"
-                maxlength="1000"
-                placeholder="Latest update description..."
-              ></textarea>
-
-              <div class="field-meta">
-
-                <span>
-                  Description of the latest update
-                </span>
-
-                <span id="addons-update-count">
-                  0 / 1000
-                </span>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <div class="panel-card">
-
-          <div class="simple-row">
-
-            <div>
-
-              <h2>
-                Addons Source Code
-              </h2>
-
-              <p>
-                View the source code and change history.
-              </p>
-
-            </div>
-
-
-            <a
-              class="secondary-button"
-              href="https://github.com/maru-m4ru-maru/maru-addons"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Open GitHub ↗
-            </a>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      <!-- UPDATES -->
-
-      <section
-        class="section"
-        data-content="updates"
-      >
-
-        <div class="section-title">
-
-          <div>
-
-            <span>03</span>
-
-            <div>
-
-              <p>UPDATES</p>
-
-              <h2>
-                Updates
-              </h2>
-
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <div class="panel-card">
-
-          <div class="empty-state">
-
-            <div class="empty-icon">
-              +
-            </div>
-
-            <h2>
-              Update History
-            </h2>
-
-            <p>
-              Update history management can be added in a future update.
-            </p>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      <!-- SAVE BAR -->
-
-      <footer class="savebar">
-
-        <div>
-
-          <div
-            id="save-status"
-            class="save-text"
-          >
-            Saved
-          </div>
-
-          <div
-            id="save-time"
-            class="save-time"
-          >
-            —
-          </div>
-
-        </div>
-
-
-        <div class="save-actions">
-
-          <button
-            id="reset"
-            class="secondary-button"
-            type="button"
-          >
-            Reset Changes
-          </button>
-
-
-          <button
-            id="save-bottom"
-            class="primary-button"
-            type="button"
-          >
-            Save
-          </button>
-
-        </div>
-
-      </footer>
+        id="pageContent"
+        class="page-content"
+      ></section>
 
     </main>
 
 
     <!-- LIVE PREVIEW -->
+    <aside class="preview">
 
-    <aside class="right-preview">
-
-      <div class="right-preview-header">
+      <div class="preview-header">
 
         <div>
+          <strong>Live Preview</strong>
 
           <span>
-            LIVE PREVIEW
+            Website
           </span>
-
-          <strong>
-            Homepage
-          </strong>
-
         </div>
 
-
-        <span class="preview-status">
-          LIVE
-        </span>
+        <button
+          id="refreshPreviewButton"
+          class="icon-button"
+          title="Refresh preview"
+        >
+          ↻
+        </button>
 
       </div>
 
 
-      <div class="browser">
+      <div class="preview-window">
 
-        <div class="browser-top">
+        <div class="preview-browser">
 
-          <div class="browser-dots">
+          <span></span>
+          <span></span>
+          <span></span>
 
-            <i></i>
-            <i></i>
-            <i></i>
-
-          </div>
-
-
-          <div class="browser-url">
+          <div class="preview-url">
             maru-m4ru-maru.github.io
           </div>
 
         </div>
 
-
-        <div class="browser-page">
-
-          <div class="preview-site-header">
-
-            <img
-              src="https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png"
-              alt=""
-            >
-
-            <strong
-              id="live-name"
-            >
-              maru_m4ru_maru
-            </strong>
-
-          </div>
-
-
-          <div class="preview-hero">
-
-            <small>
-              OFFICIAL WEBSITE
-            </small>
-
-            <h3
-              id="live-tagline"
-            >
-              ScratchやWebを、もっと便利に。
-            </h3>
-
-            <p
-              id="live-description"
-            >
-              maru_m4ru_maru が制作している
-              ツール・サービス・プロジェクトを紹介しています。
-            </p>
-
-          </div>
-
-
-          <div class="preview-addons">
-
-            <div class="preview-tag">
-              Scratch
-            </div>
-
-
-            <strong>
-              まる Addons
-            </strong>
-
-
-            <span
-              id="live-version"
-            >
-              v1.4.5
-            </span>
-
-
-            <p
-              id="live-update"
-            >
-              60FPS機能を追加し、
-              表示を整理しました。
-            </p>
-
-          </div>
-
-        </div>
+        <div
+          id="previewContent"
+          class="preview-content"
+        ></div>
 
       </div>
 
@@ -870,162 +244,91 @@
 
 
   <!-- HELP MODAL -->
-
   <div
-    id="help-modal"
+    id="helpModal"
     class="modal hidden"
   >
 
     <div class="modal-backdrop"></div>
 
-
-    <div
-      class="modal-box"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="help-title"
-    >
+    <div class="modal-card">
 
       <div class="modal-header">
-
         <div>
-
-          <span>
-            操作説明
+          <span class="modal-kicker">
+            ADMIN GUIDE
           </span>
 
-          <h2 id="help-title">
-            管理画面の使い方
-          </h2>
-
+          <h2>操作説明</h2>
         </div>
 
-
         <button
-          id="help-close"
-          class="modal-close"
-          type="button"
-          aria-label="閉じる"
+          id="closeHelpButton"
+          class="icon-button"
         >
           ×
         </button>
-
       </div>
 
 
-      <div class="help-content">
+      <div class="help-grid">
 
-
-        <div class="help-step">
-
-          <strong>
-            1. 編集する
-          </strong>
-
+        <div class="help-item">
+          <strong>Pages</strong>
           <p>
-            左側のメニューから編集したい項目を選び、
-            入力欄を書き換えます。
+            サイトページの基本構成を管理します。
           </p>
-
         </div>
 
-
-        <div class="help-step">
-
-          <strong>
-            2. プレビューを確認する
-          </strong>
-
+        <div class="help-item">
+          <strong>Sections</strong>
           <p>
-            入力した内容は右側の
-            「LIVE PREVIEW」にリアルタイムで反映されます。
+            ホームページ内のセクションを並び替えたり、
+            有効・無効を変更できます。
           </p>
-
         </div>
 
-
-        <div class="help-step">
-
-          <strong>
-            3. 保存する
-          </strong>
-
+        <div class="help-item">
+          <strong>Projects</strong>
           <p>
-            内容を確認したら「Save」を押してください。
-            GitHub上のサイトデータが更新されます。
+            プロジェクトカードを追加・編集できます。
           </p>
-
         </div>
 
-
-        <div class="help-step">
-
-          <strong>
-            4. 変更を元に戻す
-          </strong>
-
+        <div class="help-item">
+          <strong>Updates</strong>
           <p>
-            まだ保存していない変更は
-            「Reset Changes」で最後に保存した状態へ戻せます。
+            最新アップデートを追加できます。
           </p>
-
         </div>
 
-
-        <div class="help-step">
-
-          <strong>
-            5. キーボードから保存
-          </strong>
-
+        <div class="help-item">
+          <strong>Embeds</strong>
           <p>
-            パソコンでは
-            <strong>Ctrl + S</strong>
-            でも保存できます。
+            URLを指定してiframeコンテンツを追加できます。
           </p>
-
         </div>
 
-
-        <div class="help-step">
-
-          <strong>
-            6. サイトを確認する
-          </strong>
-
+        <div class="help-item">
+          <strong>Links</strong>
           <p>
-            左下の「View Website」から
-            公開されているホームページを開けます。
+            外部リンクやボタン用リンクを管理できます。
           </p>
-
         </div>
 
-
-        <div class="help-warning">
-
-          <strong>
-            注意
-          </strong>
-
+        <div class="help-item">
+          <strong>Navigation</strong>
           <p>
-            「Save」を押すと実際のサイトデータが更新されます。
-            内容を確認してから保存してください。
+            ヘッダーのナビゲーションを変更できます。
           </p>
-
         </div>
 
-      </div>
-
-
-      <div class="modal-footer">
-
-        <button
-          id="help-ok"
-          class="primary-button"
-          type="button"
-        >
-          閉じる
-        </button>
+        <div class="help-item">
+          <strong>Save Changes</strong>
+          <p>
+            変更内容をCloudflare Worker経由でGitHubへ保存します。
+          </p>
+        </div>
 
       </div>
 
@@ -1034,16 +337,7 @@
   </div>
 
 
-  <div
-    id="toast"
-    class="toast"
-  >
-    Saved
-  </div>
-
-
-  <script src="admin.js"></script>
+  <script src="./admin.js"></script>
 
 </body>
-
 </html>
