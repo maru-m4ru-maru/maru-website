@@ -1,1117 +1,3886 @@
-(() => {
-  "use strict";
+const WORKER_URL =
+  "https://maru-website-admin.maru-0727.workers.dev";
 
-  const WORKER_URL =
-    "https://maru-website-admin.maru-0727.workers.dev";
-
-  const DATA_URL =
-    "../site-data.json";
+const DATA_URL =
+  "../site-data.json";
 
 
-  const token =
+let siteData = null;
+let savedSnapshot = null;
+let currentPage = "overview";
+
+
+const pageTitles = {
+  overview: "Overview",
+  site: "Site",
+  pages: "Pages",
+  sections: "Sections",
+  projects: "Projects",
+  updates: "Updates",
+  links: "Links",
+  embeds: "Embeds",
+  navigation: "Navigation",
+  settings: "Site Settings"
+};
+
+
+/* =========================
+   DOM
+========================= */
+
+const pageContent =
+  document.getElementById("pageContent");
+
+const pageTitle =
+  document.getElementById("pageTitle");
+
+const saveState =
+  document.getElementById("saveState");
+
+const saveButton =
+  document.getElementById("saveButton");
+
+const previewContent =
+  document.getElementById("previewContent");
+
+
+/* =========================
+   AUTH
+========================= */
+
+function getToken() {
+  return sessionStorage.getItem(
+    "maru_admin_token"
+  );
+}
+
+
+function getExpiresAt() {
+  return Number(
     sessionStorage.getItem(
-      "maru_admin_token"
-    );
+      "maru_admin_expires"
+    ) || 0
+  );
+}
 
 
-  const siteName =
-    document.getElementById(
-      "site-name"
-    );
+function isAuthenticated() {
+  const token = getToken();
+  const expires = getExpiresAt();
 
-  const tagline =
-    document.getElementById(
-      "tagline"
-    );
-
-  const description =
-    document.getElementById(
-      "description"
-    );
-
-  const addonsVersion =
-    document.getElementById(
-      "addons-version"
-    );
-
-  const addonsUpdate =
-    document.getElementById(
-      "addons-update"
-    );
-
-  const updateDate =
-    document.getElementById(
-      "update-date"
-    );
+  return Boolean(
+    token &&
+    expires &&
+    Date.now() < expires
+  );
+}
 
 
-  const quickVersion =
-    document.getElementById(
-      "quick-version"
-    );
+function requireAuth() {
+  if (!isAuthenticated()) {
+    window.location.href = "./";
+    return false;
+  }
 
-  const quickUpdate =
-    document.getElementById(
-      "quick-update"
-    );
-
-
-  const saveButtons = [
-    document.getElementById("save-top"),
-    document.getElementById("save-bottom")
-  ].filter(Boolean);
+  return true;
+}
 
 
-  const resetButton =
-    document.getElementById(
-      "reset"
-    );
+/* =========================
+   UTILITIES
+========================= */
+
+function clone(value) {
+  return JSON.parse(
+    JSON.stringify(value)
+  );
+}
 
 
-  const logoutButton =
-    document.getElementById(
-      "logout"
-    );
+function makeId(prefix) {
+  return (
+    prefix +
+    "-" +
+    Date.now().toString(36) +
+    "-" +
+    Math.random()
+      .toString(36)
+      .slice(2, 8)
+  );
+}
 
 
-  const saveIndicator =
-    document.getElementById(
-      "save-indicator"
-    );
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
 
 
-  const saveStatus =
-    document.getElementById(
-      "save-status"
-    );
+function markDirty() {
+  saveState.textContent = "Unsaved";
+  saveState.className =
+    "save-state dirty";
+}
 
 
-  const saveTime =
-    document.getElementById(
-      "save-time"
-    );
+function markSaved() {
+  saveState.textContent = "Saved";
+  saveState.className =
+    "save-state saved";
+}
 
+
+function showToast(message) {
 
   const toast =
-    document.getElementById(
-      "toast"
-    );
+    document.createElement("div");
+
+  toast.className = "toast";
+  toast.textContent = message;
+
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 2600);
+}
 
 
-  let originalData = null;
-
-  let currentData = null;
-
-  let dirty = false;
-
-  let saveInProgress = false;
-
-
-  const sections = {
-    overview: {
-      title: "Overview",
-      description:
-        "サイトの状態を確認します。"
-    },
-
-    site: {
-      title: "Site",
-      description:
-        "サイトの基本情報を編集します。"
-    },
-
-    addons: {
-      title: "Addons",
-      description:
-        "まる Addonsの情報を編集します。"
-    },
-
-    updates: {
-      title: "Updates",
-      description:
-        "サイトの更新情報を管理します。"
-    }
-  };
-
-
-  function markDirty() {
-
-    dirty = true;
-
-    saveIndicator?.classList.remove(
-      "saved"
-    );
-
-    saveIndicator?.classList.add(
-      "unsaved"
-    );
-
-    saveIndicator.querySelector(
-      "span"
-    ).nextSibling.textContent =
-      " 未保存";
-
-    saveStatus.textContent =
-      "変更があります";
-
+function getArray(name) {
+  if (!Array.isArray(siteData[name])) {
+    siteData[name] = [];
   }
 
+  return siteData[name];
+}
 
-  function markSaved() {
 
-    dirty = false;
+/* =========================
+   LOAD
+========================= */
 
-    saveIndicator?.classList.remove(
-      "unsaved"
+async function loadData() {
+
+  try {
+
+    const response = await fetch(
+      `${DATA_URL}?cb=${Date.now()}`,
+      {
+        cache: "no-store"
+      }
     );
 
-    saveIndicator?.classList.add(
-      "saved"
-    );
-
-    saveIndicator.querySelector(
-      "span"
-    ).nextSibling.textContent =
-      " 保存済み";
-
-    saveStatus.textContent =
-      "保存済み";
-
-    saveTime.textContent =
-      new Date().toLocaleTimeString(
-        "ja-JP",
-        {
-          hour: "2-digit",
-          minute: "2-digit"
-        }
+    if (!response.ok) {
+      throw new Error(
+        `HTTP ${response.status}`
       );
-
-  }
-
-
-  function showToast(
-    text
-  ) {
-
-    toast.textContent =
-      text;
-
-    toast.classList.add(
-      "show"
-    );
-
-    clearTimeout(
-      toast.__timer
-    );
-
-    toast.__timer =
-      setTimeout(
-        () => {
-          toast.classList.remove(
-            "show"
-          );
-        },
-        1800
-      );
-
-  }
-
-
-  function setField(
-    element,
-    value
-  ) {
-
-    if (!element) return;
-
-    element.value =
-      typeof value === "string"
-        ? value
-        : "";
-
-  }
-
-
-  function getField(
-    element
-  ) {
-
-    return element?.value?.trim() ||
-      "";
-
-  }
-
-
-  function applyData(
-    data
-  ) {
-
-    currentData = {
-      siteName:
-        data.siteName || "",
-
-      tagline:
-        data.tagline || "",
-
-      description:
-        data.description || "",
-
-      addonsVersion:
-        data.addonsVersion || "",
-
-      addonsUpdate:
-        data.addonsUpdate || "",
-
-      updateDate:
-        data.updateDate || ""
-    };
-
-
-    setField(
-      siteName,
-      currentData.siteName
-    );
-
-    setField(
-      tagline,
-      currentData.tagline
-    );
-
-    setField(
-      description,
-      currentData.description
-    );
-
-    setField(
-      addonsVersion,
-      currentData.addonsVersion
-    );
-
-    setField(
-      addonsUpdate,
-      currentData.addonsUpdate
-    );
-
-    setField(
-      updateDate,
-      currentData.updateDate
-    );
-
-
-    setField(
-      quickVersion,
-      currentData.addonsVersion
-    );
-
-    setField(
-      quickUpdate,
-      currentData.addonsUpdate
-    );
-
-
-    updateAllPreviews();
-
-    updateCounts();
-
-  }
-
-
-  function collectData() {
-
-    return {
-      siteName:
-        getField(siteName),
-
-      tagline:
-        getField(tagline),
-
-      description:
-        getField(description),
-
-      addonsVersion:
-        getField(addonsVersion),
-
-      addonsUpdate:
-        getField(addonsUpdate),
-
-      updateDate:
-        getField(updateDate)
-    };
-
-  }
-
-
-  function syncQuickEdit() {
-
-    if (
-      document.activeElement !==
-      quickVersion
-    ) {
-      quickVersion.value =
-        addonsVersion.value;
     }
 
+    siteData = await response.json();
 
-    if (
-      document.activeElement !==
-      quickUpdate
-    ) {
-      quickUpdate.value =
-        addonsUpdate.value;
-    }
+    normalizeData();
 
-  }
+    savedSnapshot = clone(siteData);
 
+    markSaved();
 
-  function updateAllPreviews() {
+    renderPage(currentPage);
 
-    const data =
-      collectData();
+    renderPreview();
 
+  } catch (error) {
 
-    document
-      .getElementById(
-        "stat-site-name"
-      )
-      .textContent =
-        data.siteName ||
-        "—";
+    console.error(error);
 
-
-    document
-      .getElementById(
-        "stat-version"
-      )
-      .textContent =
-        data.addonsVersion
-          ? `v${data.addonsVersion}`
-          : "—";
-
-
-    document
-      .getElementById(
-        "stat-date"
-      )
-      .textContent =
-        data.updateDate ||
-        "—";
-
-
-    document
-      .getElementById(
-        "preview-site-name"
-      )
-      .textContent =
-        data.siteName ||
-        "maru_m4ru_maru";
-
-
-    document
-      .getElementById(
-        "preview-tagline"
-      )
-      .textContent =
-        data.tagline ||
-        "";
-
-
-    document
-      .getElementById(
-        "live-name"
-      )
-      .textContent =
-        data.siteName ||
-        "maru_m4ru_maru";
-
-
-    document
-      .getElementById(
-        "live-tagline"
-      )
-      .textContent =
-        data.tagline ||
-        "";
-
-
-    document
-      .getElementById(
-        "live-description"
-      )
-      .textContent =
-        data.description ||
-        "";
-
-
-    document
-      .getElementById(
-        "live-version"
-      )
-      .textContent =
-        data.addonsVersion
-          ? `v${data.addonsVersion}`
-          : "";
-
-
-    document
-      .getElementById(
-        "live-update"
-      )
-      .textContent =
-        data.addonsUpdate ||
-        "";
+    pageContent.innerHTML = `
+      <div class="card">
+        <strong>Failed to load site-data.json</strong>
+        <p>
+          ${escapeHtml(error.message)}
+        </p>
+      </div>
+    `;
 
   }
 
+}
 
-  function updateCounts() {
 
-    updateCount(
-      siteName,
-      "site-name-count",
-      100
-    );
+/* =========================
+   DATA NORMALIZATION
+========================= */
 
-    updateCount(
-      tagline,
-      "tagline-count",
-      200
-    );
+function normalizeData() {
 
-    updateCount(
-      description,
-      "description-count",
-      1000
-    );
-
-    updateCount(
-      addonsUpdate,
-      "addons-update-count",
-      1000
-    );
-
+  if (!siteData.site) {
+    siteData.site = {};
   }
 
+  if (!siteData.site.name) {
+    siteData.site.name =
+      "maru_m4ru_maru";
+  }
 
-  function updateCount(
-    input,
-    targetId,
-    max
+  if (!siteData.site.avatar) {
+    siteData.site.avatar =
+      "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png";
+  }
+
+  if (!siteData.navigation) {
+    siteData.navigation = [];
+  }
+
+  if (!siteData.stats) {
+    siteData.stats = [];
+  }
+
+  if (!siteData.projects) {
+    siteData.projects = [];
+  }
+
+  if (!siteData.updates) {
+    siteData.updates = [];
+  }
+
+  if (!siteData.embeds) {
+    siteData.embeds = [];
+  }
+
+  if (!siteData.links) {
+    siteData.links = [];
+  }
+
+  if (!siteData.sections) {
+    siteData.sections = [];
+  }
+
+  if (!siteData.settings) {
+    siteData.settings = {};
+  }
+
+  if (
+    typeof siteData.settings.showFooter !==
+    "boolean"
   ) {
-
-    const target =
-      document.getElementById(
-        targetId
-      );
-
-    if (!target || !input) {
-      return;
-    }
-
-    target.textContent =
-      `${input.value.length} / ${max}`;
-
+    siteData.settings.showFooter = true;
   }
 
-
-  function setupFieldListeners() {
-
-    const fields = [
-      siteName,
-      tagline,
-      description,
-      addonsVersion,
-      addonsUpdate,
-      updateDate,
-      quickVersion,
-      quickUpdate
-    ];
+}
 
 
-    fields.forEach(
-      field => {
+/* =========================
+   PAGE NAVIGATION
+========================= */
 
-        if (!field) return;
+document
+  .querySelectorAll(".nav-item")
+  .forEach((button) => {
 
-        field.addEventListener(
-          "input",
-          () => {
+    button.addEventListener(
+      "click",
+      () => {
 
-            if (
-              field ===
-              quickVersion
-            ) {
-              addonsVersion.value =
-                field.value;
-            }
+        currentPage =
+          button.dataset.page;
 
+        document
+          .querySelectorAll(".nav-item")
+          .forEach((item) => {
+            item.classList.toggle(
+              "active",
+              item === button
+            );
+          });
 
-            if (
-              field ===
-              quickUpdate
-            ) {
-              addonsUpdate.value =
-                field.value;
-            }
-
-
-            if (
-              field ===
-              addonsVersion
-            ) {
-              if (
-                quickVersion !==
-                document.activeElement
-              ) {
-                quickVersion.value =
-                  field.value;
-              }
-            }
-
-
-            if (
-              field ===
-              addonsUpdate
-            ) {
-              if (
-                quickUpdate !==
-                document.activeElement
-              ) {
-                quickUpdate.value =
-                  field.value;
-              }
-            }
-
-
-            updateCounts();
-            updateAllPreviews();
-            markDirty();
-
-          }
-        );
+        renderPage(currentPage);
 
       }
     );
 
+  });
+
+
+function renderPage(page) {
+
+  pageTitle.textContent =
+    pageTitles[page] ||
+    page;
+
+  pageContent.innerHTML = "";
+
+  switch (page) {
+
+    case "overview":
+      renderOverview();
+      break;
+
+    case "site":
+      renderSite();
+      break;
+
+    case "pages":
+      renderPages();
+      break;
+
+    case "sections":
+      renderSections();
+      break;
+
+    case "projects":
+      renderProjects();
+      break;
+
+    case "updates":
+      renderUpdates();
+      break;
+
+    case "links":
+      renderLinks();
+      break;
+
+    case "embeds":
+      renderEmbeds();
+      break;
+
+    case "navigation":
+      renderNavigation();
+      break;
+
+    case "settings":
+      renderSettings();
+      break;
+
+    default:
+      renderOverview();
+
   }
 
-
-  function setupNavigation() {
-
-    const buttons =
-      document.querySelectorAll(
-        ".nav-item"
-      );
+}
 
 
-    buttons.forEach(
-      button => {
+/* =========================
+   OVERVIEW
+========================= */
 
-        button.addEventListener(
+function renderOverview() {
+
+  const enabledProjects =
+    getArray("projects")
+      .filter(
+        (item) => item.enabled !== false
+      ).length;
+
+  const enabledSections =
+    getArray("sections")
+      .filter(
+        (item) => item.enabled !== false
+      ).length;
+
+  const updates =
+    getArray("updates").length;
+
+  const embeds =
+    getArray("embeds").length;
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+      <h2>Welcome back.</h2>
+      <p>
+        Manage your website content from one place.
+        Changes are kept locally until you press
+        Save Changes.
+      </p>
+    </div>
+
+
+    <div class="dashboard-grid">
+
+      <div class="dashboard-card">
+        <span>Projects</span>
+        <strong>${enabledProjects}</strong>
+        <p>Visible projects</p>
+      </div>
+
+      <div class="dashboard-card">
+        <span>Sections</span>
+        <strong>${enabledSections}</strong>
+        <p>Active homepage sections</p>
+      </div>
+
+      <div class="dashboard-card">
+        <span>Updates</span>
+        <strong>${updates}</strong>
+        <p>Published updates</p>
+      </div>
+
+      <div class="dashboard-card">
+        <span>Embeds</span>
+        <strong>${embeds}</strong>
+        <p>Embedded pages</p>
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-header">
+        <strong>Current Site</strong>
+        <span>LIVE DATA</span>
+      </div>
+
+      <div class="form-grid">
+
+        <div>
+          <strong>
+            ${escapeHtml(
+              siteData.site.name
+            )}
+          </strong>
+
+          <div style="
+            margin-top:4px;
+            color:#7d838c;
+            font-size:11px;
+          ">
+            ${escapeHtml(
+              siteData.site.tagline
+            )}
+          </div>
+        </div>
+
+        <div style="
+          text-align:right;
+          color:#7d838c;
+          font-size:11px;
+        ">
+          ${escapeHtml(
+            siteData.site.github || ""
+          )}
+        </div>
+
+      </div>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================
+   SITE
+========================= */
+
+function renderSite() {
+
+  const site =
+    siteData.site || {};
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+      <h2>Site Identity</h2>
+      <p>
+        Basic information displayed across the website.
+      </p>
+    </div>
+
+
+    <div class="card">
+
+      <div class="form-grid">
+
+        <div class="field">
+
+          <label>Site Name</label>
+
+          <input
+            id="siteName"
+            value="${escapeHtml(
+              site.name || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Tagline</label>
+
+          <input
+            id="siteTagline"
+            value="${escapeHtml(
+              site.tagline || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field full">
+
+          <label>Description</label>
+
+          <textarea
+            id="siteDescription"
+          >${escapeHtml(
+            site.description || ""
+          )}</textarea>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Avatar URL</label>
+
+          <input
+            id="siteAvatar"
+            value="${escapeHtml(
+              site.avatar || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>GitHub URL</label>
+
+          <input
+            id="siteGithub"
+            value="${escapeHtml(
+              site.github || ""
+            )}"
+          >
+
+        </div>
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  bindInput(
+    "siteName",
+    (value) => {
+      siteData.site.name = value;
+    }
+  );
+
+  bindInput(
+    "siteTagline",
+    (value) => {
+      siteData.site.tagline = value;
+    }
+  );
+
+  bindInput(
+    "siteDescription",
+    (value) => {
+      siteData.site.description = value;
+    }
+  );
+
+  bindInput(
+    "siteAvatar",
+    (value) => {
+      siteData.site.avatar = value;
+    }
+  );
+
+  bindInput(
+    "siteGithub",
+    (value) => {
+      siteData.site.github = value;
+    }
+  );
+
+}
+
+
+/* =========================
+   PAGES
+========================= */
+
+function renderPages() {
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+      <h2>Pages</h2>
+      <p>
+        Homepage and future pages can be managed here.
+      </p>
+    </div>
+
+
+    <div class="card">
+
+      <div class="editor-item">
+
+        <div class="drag-handle">
+          ☰
+        </div>
+
+        <div class="item-main">
+
+          <strong>Home</strong>
+
+          <span>
+            /
+          </span>
+
+        </div>
+
+        <div class="item-actions">
+
+          <button
+            disabled
+          >
+            Primary
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-header">
+        <strong>Coming Next</strong>
+        <span>CMS</span>
+      </div>
+
+      <p style="
+        margin:0;
+        color:#757c85;
+        font-size:11px;
+        line-height:1.7;
+      ">
+        Additional custom pages can be connected
+        to the same CMS structure later.
+      </p>
+
+    </div>
+
+  `;
+
+}
+
+
+/* =========================
+   SECTIONS
+========================= */
+
+function renderSections() {
+
+  const sections =
+    getArray("sections");
+
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+
+      <h2>Homepage Sections</h2>
+
+      <p>
+        Enable, disable and reorder homepage sections.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-header">
+
+        <strong>Section Order</strong>
+
+        <button
+          id="addSectionButton"
+          class="button small"
+        >
+          + Add Section
+        </button>
+
+      </div>
+
+
+      <div
+        id="sectionsList"
+        class="editor-list"
+      ></div>
+
+    </div>
+
+  `;
+
+
+  const list =
+    document.getElementById(
+      "sectionsList"
+    );
+
+
+  sections.forEach(
+    (section, index) => {
+
+      const row =
+        document.createElement(
+          "div"
+        );
+
+      row.className =
+        "section-row";
+
+      row.innerHTML = `
+
+        <div class="section-order">
+          ${index + 1}
+        </div>
+
+        <div>
+
+          <strong>
+            ${escapeHtml(
+              section.title ||
+              section.type
+            )}
+          </strong>
+
+          <small>
+            ${escapeHtml(
+              section.type
+            )}
+          </small>
+
+        </div>
+
+
+        <button
+          class="toggle ${
+            section.enabled !== false
+              ? "on"
+              : ""
+          }"
+          title="Toggle section"
+        ></button>
+
+
+        <div class="item-actions">
+
+          <button
+            class="move-up"
+          >
+            ↑
+          </button>
+
+          <button
+            class="move-down"
+          >
+            ↓
+          </button>
+
+          <button
+            class="edit-section"
+          >
+            Edit
+          </button>
+
+          <button
+            class="delete-section"
+          >
+            Delete
+          </button>
+
+        </div>
+
+      `;
+
+
+      row
+        .querySelector(".toggle")
+        .addEventListener(
           "click",
           () => {
 
-            const key =
-              button.dataset.section;
+            section.enabled =
+              section.enabled === false;
+
+            markDirty();
+            renderSections();
+            renderPreview();
+
+          }
+        );
+
+
+      row
+        .querySelector(".move-up")
+        .addEventListener(
+          "click",
+          () => {
+
+            if (index <= 0) {
+              return;
+            }
+
+            [
+              sections[index - 1],
+              sections[index]
+            ] = [
+              sections[index],
+              sections[index - 1]
+            ];
+
+            markDirty();
+            renderSections();
+            renderPreview();
+
+          }
+        );
+
+
+      row
+        .querySelector(".move-down")
+        .addEventListener(
+          "click",
+          () => {
 
             if (
-              !sections[key]
+              index >=
+              sections.length - 1
             ) {
               return;
             }
 
+            [
+              sections[index + 1],
+              sections[index]
+            ] = [
+              sections[index],
+              sections[index + 1]
+            ];
 
-            buttons.forEach(
-              item => {
-                item.classList.toggle(
-                  "active",
-                  item === button
-                );
-              }
+            markDirty();
+            renderSections();
+            renderPreview();
+
+          }
+        );
+
+
+      row
+        .querySelector(".edit-section")
+        .addEventListener(
+          "click",
+          () => {
+
+            openSectionEditor(
+              section
             );
 
+          }
+        );
 
-            document
-              .querySelectorAll(
-                ".section"
+
+      row
+        .querySelector(".delete-section")
+        .addEventListener(
+          "click",
+          () => {
+
+            if (
+              !confirm(
+                `Delete section "${section.title}"?`
               )
-              .forEach(
-                section => {
+            ) {
+              return;
+            }
 
-                  section.classList.toggle(
-                    "active",
-                    section.dataset.content ===
-                      key
-                  );
+            sections.splice(
+              index,
+              1
+            );
 
-                }
-              );
+            markDirty();
 
+            renderSections();
 
-            document
-              .getElementById(
-                "page-title"
-              )
-              .textContent =
-                sections[key].title;
-
-
-            document
-              .getElementById(
-                "page-description"
-              )
-              .textContent =
-                sections[key].description;
+            renderPreview();
 
           }
+        );
+
+
+      list.appendChild(row);
+
+    }
+  );
+
+
+  document
+    .getElementById(
+      "addSectionButton"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        const section = {
+          id: makeId("section"),
+          type: "text",
+          title: "New Section",
+          description: "",
+          enabled: true
+        };
+
+        sections.push(section);
+
+        markDirty();
+
+        renderSections();
+
+        renderPreview();
+
+      }
+    );
+
+}
+
+
+function openSectionEditor(section) {
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+
+      <h2>Edit Section</h2>
+
+      <p>
+        Configure this homepage section.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="form-grid">
+
+        <div class="field">
+
+          <label>Type</label>
+
+          <select id="sectionType">
+
+            <option value="hero">Hero</option>
+            <option value="stats">Stats</option>
+            <option value="projects">Projects</option>
+            <option value="updates">Updates</option>
+            <option value="embeds">Embeds</option>
+            <option value="links">Links</option>
+            <option value="github">GitHub</option>
+            <option value="text">Text</option>
+
+          </select>
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Title</label>
+
+          <input
+            id="sectionTitle"
+            value="${escapeHtml(
+              section.title || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field full">
+
+          <label>Description</label>
+
+          <textarea
+            id="sectionDescription"
+          >${escapeHtml(
+            section.description || ""
+          )}</textarea>
+
+        </div>
+
+      </div>
+
+      <div style="
+        margin-top:16px;
+        display:flex;
+        gap:8px;
+      ">
+
+        <button
+          id="saveSectionLocal"
+          class="button primary"
+        >
+          Apply
+        </button>
+
+        <button
+          id="cancelSectionEdit"
+          class="button"
+        >
+          Cancel
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document.getElementById(
+    "sectionType"
+  ).value =
+    section.type || "text";
+
+
+  document
+    .getElementById(
+      "saveSectionLocal"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        section.type =
+          document.getElementById(
+            "sectionType"
+          ).value;
+
+        section.title =
+          document.getElementById(
+            "sectionTitle"
+          ).value;
+
+        section.description =
+          document.getElementById(
+            "sectionDescription"
+          ).value;
+
+        markDirty();
+
+        renderSections();
+
+        renderPreview();
+
+      }
+    );
+
+
+  document
+    .getElementById(
+      "cancelSectionEdit"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        renderSections();
+      }
+    );
+
+}
+
+
+/* =========================
+   PROJECTS
+========================= */
+
+function renderProjects() {
+
+  const projects =
+    getArray("projects");
+
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+
+      <h2>Projects</h2>
+
+      <p>
+        Create and manage project cards displayed
+        on the homepage.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-header">
+
+        <strong>Project Collection</strong>
+
+        <button
+          id="addProjectButton"
+          class="button primary small"
+        >
+          + Add Project
+        </button>
+
+      </div>
+
+
+      <div
+        id="projectList"
+        class="editor-list"
+      ></div>
+
+    </div>
+
+  `;
+
+
+  const list =
+    document.getElementById(
+      "projectList"
+    );
+
+
+  if (!projects.length) {
+
+    list.innerHTML =
+      `<div class="empty">
+        No projects yet.
+      </div>`;
+
+  }
+
+
+  projects.forEach(
+    (project, index) => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+      item.className =
+        "editor-item";
+
+      item.innerHTML = `
+
+        <div class="drag-handle">
+          ◆
+        </div>
+
+        <div class="item-main">
+
+          <strong>
+            ${escapeHtml(
+              project.title
+            )}
+          </strong>
+
+          <span>
+            ${escapeHtml(
+              project.status || "No status"
+            )}
+          </span>
+
+        </div>
+
+        <div class="item-actions">
+
+          <button
+            class="toggleProject"
+          >
+            ${
+              project.enabled !== false
+                ? "Enabled"
+                : "Disabled"
+            }
+          </button>
+
+          <button
+            class="editProject"
+          >
+            Edit
+          </button>
+
+          <button
+            class="deleteProject"
+          >
+            Delete
+          </button>
+
+        </div>
+
+      `;
+
+
+      item
+        .querySelector(
+          ".toggleProject"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            project.enabled =
+              project.enabled === false;
+
+            markDirty();
+
+            renderProjects();
+
+            renderPreview();
+
+          }
+        );
+
+
+      item
+        .querySelector(
+          ".editProject"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            openProjectEditor(
+              project
+            );
+
+          }
+        );
+
+
+      item
+        .querySelector(
+          ".deleteProject"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            if (
+              !confirm(
+                `Delete "${project.title}"?`
+              )
+            ) {
+              return;
+            }
+
+            projects.splice(
+              index,
+              1
+            );
+
+            markDirty();
+
+            renderProjects();
+
+            renderPreview();
+
+          }
+        );
+
+
+      list.appendChild(item);
+
+    }
+  );
+
+
+  document
+    .getElementById(
+      "addProjectButton"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        const project = {
+          id: makeId("project"),
+          title: "New Project",
+          description: "",
+          status: "In Development",
+          tags: [],
+          url: "",
+          github: "",
+          icon: "PR",
+          featured: false,
+          enabled: true
+        };
+
+        projects.push(project);
+
+        markDirty();
+
+        openProjectEditor(
+          project
         );
 
       }
     );
 
-  }
+}
 
 
-  async function loadData() {
+function openProjectEditor(project) {
 
-    try {
+  pageContent.innerHTML = `
 
-      const response =
-        await fetch(
-          `${DATA_URL}?cb=${Date.now()}`,
-          {
-            cache: "no-store"
+    <div class="page-heading">
+
+      <h2>Edit Project</h2>
+
+      <p>
+        Everything here is stored in site-data.json.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="form-grid">
+
+        <div class="field">
+
+          <label>Title</label>
+
+          <input
+            id="projectTitle"
+            value="${escapeHtml(
+              project.title || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Status</label>
+
+          <input
+            id="projectStatus"
+            value="${escapeHtml(
+              project.status || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Icon</label>
+
+          <input
+            id="projectIcon"
+            maxlength="5"
+            value="${escapeHtml(
+              project.icon || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Project URL</label>
+
+          <input
+            id="projectUrl"
+            value="${escapeHtml(
+              project.url || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>GitHub URL</label>
+
+          <input
+            id="projectGithub"
+            value="${escapeHtml(
+              project.github || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Tags</label>
+
+          <input
+            id="projectTags"
+            value="${escapeHtml(
+              (project.tags || []).join(", ")
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field full">
+
+          <label>Description</label>
+
+          <textarea
+            id="projectDescription"
+          >${escapeHtml(
+            project.description || ""
+          )}</textarea>
+
+        </div>
+
+      </div>
+
+
+      <label class="checkbox-row">
+
+        <input
+          id="projectFeatured"
+          type="checkbox"
+          ${
+            project.featured
+              ? "checked"
+              : ""
           }
-        );
+        >
+
+        Featured project
+
+      </label>
 
 
-      if (!response.ok) {
-        throw new Error(
-          `HTTP ${response.status}`
-        );
-      }
+      <label class="checkbox-row">
+
+        <input
+          id="projectEnabled"
+          type="checkbox"
+          ${
+            project.enabled !== false
+              ? "checked"
+              : ""
+          }
+        >
+
+        Visible on website
+
+      </label>
 
 
-      const data =
-        await response.json();
+      <div style="
+        margin-top:17px;
+        display:flex;
+        gap:8px;
+      ">
+
+        <button
+          id="applyProject"
+          class="button primary"
+        >
+          Apply
+        </button>
+
+        <button
+          id="cancelProject"
+          class="button"
+        >
+          Cancel
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
 
 
-      originalData =
-        JSON.parse(
-          JSON.stringify(data)
-        );
+  document
+    .getElementById(
+      "applyProject"
+    )
+    .addEventListener(
+      "click",
+      () => {
 
+        project.title =
+          document.getElementById(
+            "projectTitle"
+          ).value;
 
-      applyData(
-        originalData
-      );
+        project.status =
+          document.getElementById(
+            "projectStatus"
+          ).value;
 
+        project.icon =
+          document.getElementById(
+            "projectIcon"
+          ).value;
 
-      markSaved();
+        project.url =
+          document.getElementById(
+            "projectUrl"
+          ).value;
 
+        project.github =
+          document.getElementById(
+            "projectGithub"
+          ).value;
 
-    } catch (error) {
+        project.tags =
+          document
+            .getElementById(
+              "projectTags"
+            )
+            .value
+            .split(",")
+            .map(
+              (item) =>
+                item.trim()
+            )
+            .filter(Boolean);
 
-      console.error(
-        "[Maru Admin]",
-        error
-      );
+        project.description =
+          document.getElementById(
+            "projectDescription"
+          ).value;
 
+        project.featured =
+          document.getElementById(
+            "projectFeatured"
+          ).checked;
 
-      saveStatus.textContent =
-        "データの読み込みに失敗しました";
+        project.enabled =
+          document.getElementById(
+            "projectEnabled"
+          ).checked;
 
+        markDirty();
 
-      saveStatus.style.color =
-        "#d54848";
+        renderProjects();
 
-    }
-
-  }
-
-
-  async function saveData() {
-
-    if (saveInProgress) {
-      return;
-    }
-
-
-    const currentToken =
-      sessionStorage.getItem(
-        "maru_admin_token"
-      );
-
-
-    if (!currentToken) {
-
-      window.location.replace(
-        "./"
-      );
-
-      return;
-    }
-
-
-    const data =
-      collectData();
-
-
-    saveInProgress =
-      true;
-
-
-    saveButtons.forEach(
-      button => {
-
-        button.disabled =
-          true;
-
-        button.textContent =
-          "保存中...";
+        renderPreview();
 
       }
     );
 
 
-    try {
+  document
+    .getElementById(
+      "cancelProject"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        renderProjects();
+      }
+    );
 
-      const response =
-        await fetch(
-          `${WORKER_URL}/admin/save`,
-          {
-            method: "POST",
+}
 
-            headers: {
-              "Content-Type":
-                "application/json",
 
-              "Authorization":
-                `Bearer ${currentToken}`
-            },
+/* =========================
+   UPDATES
+========================= */
 
-            body:
-              JSON.stringify({
-                siteData: data
-              })
+function renderUpdates() {
+
+  const updates =
+    getArray("updates");
+
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+
+      <h2>Updates</h2>
+
+      <p>
+        Publish changelog entries without editing code.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-header">
+
+        <strong>Update Feed</strong>
+
+        <button
+          id="addUpdateButton"
+          class="button primary small"
+        >
+          + Add Update
+        </button>
+
+      </div>
+
+
+      <div
+        id="updateList"
+        class="editor-list"
+      ></div>
+
+    </div>
+
+  `;
+
+
+  const list =
+    document.getElementById(
+      "updateList"
+    );
+
+
+  if (!updates.length) {
+
+    list.innerHTML =
+      `<div class="empty">
+        No updates yet.
+      </div>`;
+
+  }
+
+
+  updates.forEach(
+    (update, index) => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+      item.className =
+        "editor-item";
+
+      item.innerHTML = `
+
+        <div class="drag-handle">
+          ↗
+        </div>
+
+        <div class="item-main">
+
+          <strong>
+            ${escapeHtml(
+              update.title
+            )}
+          </strong>
+
+          <span>
+            ${escapeHtml(
+              update.date || ""
+            )}
+            ·
+            ${escapeHtml(
+              update.version || ""
+            )}
+          </span>
+
+        </div>
+
+        <div class="item-actions">
+
+          <button
+            class="editUpdate"
+          >
+            Edit
+          </button>
+
+          <button
+            class="deleteUpdate"
+          >
+            Delete
+          </button>
+
+        </div>
+
+      `;
+
+
+      item
+        .querySelector(
+          ".editUpdate"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            openUpdateEditor(
+              update
+            );
+
           }
         );
 
 
-      const result =
-        await response.json();
+      item
+        .querySelector(
+          ".deleteUpdate"
+        )
+        .addEventListener(
+          "click",
+          () => {
 
+            if (
+              !confirm(
+                "Delete this update?"
+              )
+            ) {
+              return;
+            }
 
-      if (
-        response.status === 401
-      ) {
+            updates.splice(
+              index,
+              1
+            );
 
-        sessionStorage.removeItem(
-          "maru_admin_token"
+            markDirty();
+
+            renderUpdates();
+
+            renderPreview();
+
+          }
         );
 
-        sessionStorage.removeItem(
-          "maru_admin_expires"
+
+      list.appendChild(item);
+
+    }
+  );
+
+
+  document
+    .getElementById(
+      "addUpdateButton"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        const update = {
+          id: makeId("update"),
+          project: "",
+          title: "New Update",
+          description: "",
+          version: "",
+          date: new Date()
+            .toISOString()
+            .slice(0, 10)
+            .replaceAll("-", "."),
+          enabled: true
+        };
+
+        updates.unshift(update);
+
+        markDirty();
+
+        openUpdateEditor(
+          update
         );
 
-        alert(
-          "ログインの有効期限が切れました。"
+      }
+    );
+
+}
+
+
+function openUpdateEditor(update) {
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+
+      <h2>Edit Update</h2>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="form-grid">
+
+        <div class="field">
+
+          <label>Project</label>
+
+          <input
+            id="updateProject"
+            value="${escapeHtml(
+              update.project || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Date</label>
+
+          <input
+            id="updateDate"
+            value="${escapeHtml(
+              update.date || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Version</label>
+
+          <input
+            id="updateVersion"
+            value="${escapeHtml(
+              update.version || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Title</label>
+
+          <input
+            id="updateTitle"
+            value="${escapeHtml(
+              update.title || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field full">
+
+          <label>Description</label>
+
+          <textarea
+            id="updateDescription"
+          >${escapeHtml(
+            update.description || ""
+          )}</textarea>
+
+        </div>
+
+      </div>
+
+
+      <div style="
+        margin-top:17px;
+        display:flex;
+        gap:8px;
+      ">
+
+        <button
+          id="applyUpdate"
+          class="button primary"
+        >
+          Apply
+        </button>
+
+        <button
+          id="cancelUpdate"
+          class="button"
+        >
+          Cancel
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document
+    .getElementById(
+      "applyUpdate"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        update.project =
+          document.getElementById(
+            "updateProject"
+          ).value;
+
+        update.date =
+          document.getElementById(
+            "updateDate"
+          ).value;
+
+        update.version =
+          document.getElementById(
+            "updateVersion"
+          ).value;
+
+        update.title =
+          document.getElementById(
+            "updateTitle"
+          ).value;
+
+        update.description =
+          document.getElementById(
+            "updateDescription"
+          ).value;
+
+        markDirty();
+
+        renderUpdates();
+
+        renderPreview();
+
+      }
+    );
+
+
+  document
+    .getElementById(
+      "cancelUpdate"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        renderUpdates();
+      }
+    );
+
+}
+
+
+/* =========================
+   LINKS
+========================= */
+
+function renderLinks() {
+
+  const links =
+    getArray("links");
+
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+
+      <h2>Links</h2>
+
+      <p>
+        Manage reusable links for buttons,
+        cards and future sections.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-header">
+
+        <strong>Link Library</strong>
+
+        <button
+          id="addLinkButton"
+          class="button primary small"
+        >
+          + Add Link
+        </button>
+
+      </div>
+
+
+      <div
+        id="linkList"
+        class="editor-list"
+      ></div>
+
+    </div>
+
+  `;
+
+
+  const list =
+    document.getElementById(
+      "linkList"
+    );
+
+
+  if (!links.length) {
+
+    list.innerHTML =
+      `<div class="empty">
+        No links yet.
+      </div>`;
+
+  }
+
+
+  links.forEach(
+    (link, index) => {
+
+      const item =
+        document.createElement(
+          "div"
         );
 
-        window.location.replace(
-          "./"
+      item.className =
+        "editor-item";
+
+      item.innerHTML = `
+
+        <div class="drag-handle">
+          ↗
+        </div>
+
+        <div class="item-main">
+
+          <strong>
+            ${escapeHtml(
+              link.label
+            )}
+          </strong>
+
+          <span>
+            ${escapeHtml(
+              link.url
+            )}
+          </span>
+
+        </div>
+
+        <div class="item-actions">
+
+          <button
+            class="editLink"
+          >
+            Edit
+          </button>
+
+          <button
+            class="deleteLink"
+          >
+            Delete
+          </button>
+
+        </div>
+
+      `;
+
+
+      item
+        .querySelector(
+          ".editLink"
+        )
+        .addEventListener(
+          "click",
+          () => {
+            openLinkEditor(link);
+          }
         );
 
-        return;
+
+      item
+        .querySelector(
+          ".deleteLink"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            links.splice(
+              index,
+              1
+            );
+
+            markDirty();
+
+            renderLinks();
+
+            renderPreview();
+
+          }
+        );
+
+
+      list.appendChild(item);
+
+    }
+  );
+
+
+  document
+    .getElementById(
+      "addLinkButton"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        const link = {
+          id: makeId("link"),
+          label: "New Link",
+          url: "",
+          newTab: true,
+          enabled: true
+        };
+
+        links.push(link);
+
+        markDirty();
+
+        openLinkEditor(link);
+
+      }
+    );
+
+}
+
+
+function openLinkEditor(link) {
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+      <h2>Edit Link</h2>
+    </div>
+
+
+    <div class="card">
+
+      <div class="form-grid">
+
+        <div class="field">
+
+          <label>Label</label>
+
+          <input
+            id="linkLabel"
+            value="${escapeHtml(
+              link.label || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>URL</label>
+
+          <input
+            id="linkUrl"
+            value="${escapeHtml(
+              link.url || ""
+            )}"
+          >
+
+        </div>
+
+      </div>
+
+
+      <label class="checkbox-row">
+
+        <input
+          id="linkNewTab"
+          type="checkbox"
+          ${
+            link.newTab !== false
+              ? "checked"
+              : ""
+          }
+        >
+
+        Open in new tab
+
+      </label>
+
+
+      <div style="
+        margin-top:17px;
+        display:flex;
+        gap:8px;
+      ">
+
+        <button
+          id="applyLink"
+          class="button primary"
+        >
+          Apply
+        </button>
+
+        <button
+          id="cancelLink"
+          class="button"
+        >
+          Cancel
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document
+    .getElementById(
+      "applyLink"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        link.label =
+          document.getElementById(
+            "linkLabel"
+          ).value;
+
+        link.url =
+          document.getElementById(
+            "linkUrl"
+          ).value;
+
+        link.newTab =
+          document.getElementById(
+            "linkNewTab"
+          ).checked;
+
+        markDirty();
+
+        renderLinks();
+
+        renderPreview();
+
+      }
+    );
+
+
+  document
+    .getElementById(
+      "cancelLink"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        renderLinks();
+      }
+    );
+
+}
+
+
+/* =========================
+   EMBEDS
+========================= */
+
+function renderEmbeds() {
+
+  const embeds =
+    getArray("embeds");
+
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+
+      <h2>Embeds</h2>
+
+      <p>
+        Add external websites or tools through iframe embeds.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-header">
+
+        <strong>Embed Library</strong>
+
+        <button
+          id="addEmbedButton"
+          class="button primary small"
+        >
+          + Add Embed
+        </button>
+
+      </div>
+
+
+      <div
+        id="embedList"
+        class="editor-list"
+      ></div>
+
+    </div>
+
+  `;
+
+
+  const list =
+    document.getElementById(
+      "embedList"
+    );
+
+
+  if (!embeds.length) {
+
+    list.innerHTML =
+      `<div class="empty">
+        No embeds yet.
+      </div>`;
+
+  }
+
+
+  embeds.forEach(
+    (embed, index) => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+      item.className =
+        "editor-item";
+
+      item.innerHTML = `
+
+        <div class="drag-handle">
+          ▤
+        </div>
+
+        <div class="item-main">
+
+          <strong>
+            ${escapeHtml(
+              embed.title
+            )}
+          </strong>
+
+          <span>
+            ${escapeHtml(
+              embed.url
+            )}
+          </span>
+
+        </div>
+
+        <div class="item-actions">
+
+          <button
+            class="editEmbed"
+          >
+            Edit
+          </button>
+
+          <button
+            class="deleteEmbed"
+          >
+            Delete
+          </button>
+
+        </div>
+
+      `;
+
+
+      item
+        .querySelector(
+          ".editEmbed"
+        )
+        .addEventListener(
+          "click",
+          () => {
+            openEmbedEditor(embed);
+          }
+        );
+
+
+      item
+        .querySelector(
+          ".deleteEmbed"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            embeds.splice(
+              index,
+              1
+            );
+
+            markDirty();
+
+            renderEmbeds();
+
+            renderPreview();
+
+          }
+        );
+
+
+      list.appendChild(item);
+
+    }
+  );
+
+
+  document
+    .getElementById(
+      "addEmbedButton"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        const embed = {
+          id: makeId("embed"),
+          title: "New Embed",
+          url: "",
+          width: "100%",
+          height: "420",
+          enabled: true
+        };
+
+        embeds.push(embed);
+
+        markDirty();
+
+        openEmbedEditor(embed);
+
+      }
+    );
+
+}
+
+
+function openEmbedEditor(embed) {
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+
+      <h2>Edit Embed</h2>
+
+      <p>
+        Paste a URL and it can be rendered as an iframe
+        by the website renderer.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="form-grid">
+
+        <div class="field">
+
+          <label>Title</label>
+
+          <input
+            id="embedTitle"
+            value="${escapeHtml(
+              embed.title || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>URL</label>
+
+          <input
+            id="embedUrl"
+            value="${escapeHtml(
+              embed.url || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Width</label>
+
+          <input
+            id="embedWidth"
+            value="${escapeHtml(
+              embed.width || "100%"
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Height</label>
+
+          <input
+            id="embedHeight"
+            value="${escapeHtml(
+              embed.height || "420"
+            )}"
+          >
+
+        </div>
+
+      </div>
+
+
+      <label class="checkbox-row">
+
+        <input
+          id="embedEnabled"
+          type="checkbox"
+          ${
+            embed.enabled !== false
+              ? "checked"
+              : ""
+          }
+        >
+
+        Enabled
+
+      </label>
+
+
+      <div style="
+        margin-top:17px;
+        display:flex;
+        gap:8px;
+      ">
+
+        <button
+          id="applyEmbed"
+          class="button primary"
+        >
+          Apply
+        </button>
+
+        <button
+          id="cancelEmbed"
+          class="button"
+        >
+          Cancel
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document
+    .getElementById(
+      "applyEmbed"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        embed.title =
+          document.getElementById(
+            "embedTitle"
+          ).value;
+
+        embed.url =
+          document.getElementById(
+            "embedUrl"
+          ).value;
+
+        embed.width =
+          document.getElementById(
+            "embedWidth"
+          ).value;
+
+        embed.height =
+          document.getElementById(
+            "embedHeight"
+          ).value;
+
+        embed.enabled =
+          document.getElementById(
+            "embedEnabled"
+          ).checked;
+
+        markDirty();
+
+        renderEmbeds();
+
+        renderPreview();
+
+      }
+    );
+
+
+  document
+    .getElementById(
+      "cancelEmbed"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        renderEmbeds();
+      }
+    );
+
+}
+
+
+/* =========================
+   NAVIGATION
+========================= */
+
+function renderNavigation() {
+
+  const navigation =
+    getArray("navigation");
+
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+
+      <h2>Navigation</h2>
+
+      <p>
+        Edit the links displayed in the website header.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="card-header">
+
+        <strong>Header Links</strong>
+
+        <button
+          id="addNavButton"
+          class="button primary small"
+        >
+          + Add Link
+        </button>
+
+      </div>
+
+
+      <div
+        id="navigationList"
+        class="editor-list"
+      ></div>
+
+    </div>
+
+  `;
+
+
+  const list =
+    document.getElementById(
+      "navigationList"
+    );
+
+
+  navigation.forEach(
+    (nav, index) => {
+
+      const item =
+        document.createElement(
+          "div"
+        );
+
+      item.className =
+        "editor-item";
+
+      item.innerHTML = `
+
+        <div class="drag-handle">
+          ☰
+        </div>
+
+        <div class="item-main">
+
+          <strong>
+            ${escapeHtml(
+              nav.label
+            )}
+          </strong>
+
+          <span>
+            ${escapeHtml(
+              nav.href
+            )}
+          </span>
+
+        </div>
+
+        <div class="item-actions">
+
+          <button
+            class="toggleNav"
+          >
+            ${
+              nav.enabled !== false
+                ? "Enabled"
+                : "Disabled"
+            }
+          </button>
+
+          <button
+            class="editNav"
+          >
+            Edit
+          </button>
+
+          <button
+            class="deleteNav"
+          >
+            Delete
+          </button>
+
+        </div>
+
+      `;
+
+
+      item
+        .querySelector(
+          ".toggleNav"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            nav.enabled =
+              nav.enabled === false;
+
+            markDirty();
+
+            renderNavigation();
+
+            renderPreview();
+
+          }
+        );
+
+
+      item
+        .querySelector(
+          ".editNav"
+        )
+        .addEventListener(
+          "click",
+          () => {
+            openNavigationEditor(nav);
+          }
+        );
+
+
+      item
+        .querySelector(
+          ".deleteNav"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            navigation.splice(
+              index,
+              1
+            );
+
+            markDirty();
+
+            renderNavigation();
+
+            renderPreview();
+
+          }
+        );
+
+
+      list.appendChild(item);
+
+    }
+  );
+
+
+  document
+    .getElementById(
+      "addNavButton"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        const nav = {
+          id: makeId("nav"),
+          label: "New Link",
+          href: "#",
+          enabled: true,
+          newTab: false
+        };
+
+        navigation.push(nav);
+
+        markDirty();
+
+        openNavigationEditor(nav);
+
+      }
+    );
+
+}
+
+
+function openNavigationEditor(nav) {
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+
+      <h2>Edit Navigation Link</h2>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="form-grid">
+
+        <div class="field">
+
+          <label>Label</label>
+
+          <input
+            id="navLabel"
+            value="${escapeHtml(
+              nav.label || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>URL</label>
+
+          <input
+            id="navHref"
+            value="${escapeHtml(
+              nav.href || ""
+            )}"
+          >
+
+        </div>
+
+      </div>
+
+
+      <label class="checkbox-row">
+
+        <input
+          id="navNewTab"
+          type="checkbox"
+          ${
+            nav.newTab
+              ? "checked"
+              : ""
+          }
+        >
+
+        Open in new tab
+
+      </label>
+
+
+      <div style="
+        margin-top:17px;
+        display:flex;
+        gap:8px;
+      ">
+
+        <button
+          id="applyNav"
+          class="button primary"
+        >
+          Apply
+        </button>
+
+        <button
+          id="cancelNav"
+          class="button"
+        >
+          Cancel
+        </button>
+
+      </div>
+
+    </div>
+
+  `;
+
+
+  document
+    .getElementById(
+      "applyNav"
+    )
+    .addEventListener(
+      "click",
+      () => {
+
+        nav.label =
+          document.getElementById(
+            "navLabel"
+          ).value;
+
+        nav.href =
+          document.getElementById(
+            "navHref"
+          ).value;
+
+        nav.newTab =
+          document.getElementById(
+            "navNewTab"
+          ).checked;
+
+        markDirty();
+
+        renderNavigation();
+
+        renderPreview();
+
+      }
+    );
+
+
+  document
+    .getElementById(
+      "cancelNav"
+    )
+    .addEventListener(
+      "click",
+      () => {
+        renderNavigation();
+      }
+    );
+
+}
+
+
+/* =========================
+   SETTINGS
+========================= */
+
+function renderSettings() {
+
+  const settings =
+    siteData.settings;
+
+
+  pageContent.innerHTML = `
+
+    <div class="page-heading">
+
+      <h2>Site Settings</h2>
+
+      <p>
+        Global website behaviour.
+      </p>
+
+    </div>
+
+
+    <div class="card">
+
+      <div class="form-grid">
+
+        <div class="field">
+
+          <label>Footer Text</label>
+
+          <input
+            id="footerText"
+            value="${escapeHtml(
+              settings.footerText || ""
+            )}"
+          >
+
+        </div>
+
+
+        <div class="field">
+
+          <label>Accent</label>
+
+          <select id="accentSelect">
+
+            <option value="default">
+              Default
+            </option>
+
+          </select>
+
+        </div>
+
+      </div>
+
+
+      <label class="checkbox-row">
+
+        <input
+          id="showFooter"
+          type="checkbox"
+          ${
+            settings.showFooter !== false
+              ? "checked"
+              : ""
+          }
+        >
+
+        Show Footer
+
+      </label>
+
+
+      <label class="checkbox-row">
+
+        <input
+          id="showGitHubCTA"
+          type="checkbox"
+          ${
+            settings.showGitHubCTA !== false
+              ? "checked"
+              : ""
+          }
+        >
+
+        Show GitHub CTA
+
+      </label>
+
+    </div>
+
+  `;
+
+
+  bindInput(
+    "footerText",
+    (value) => {
+      settings.footerText =
+        value;
+    }
+  );
+
+
+  document
+    .getElementById(
+      "showFooter"
+    )
+    .addEventListener(
+      "change",
+      (event) => {
+
+        settings.showFooter =
+          event.target.checked;
+
+        markDirty();
+
+        renderPreview();
+
+      }
+    );
+
+
+  document
+    .getElementById(
+      "showGitHubCTA"
+    )
+    .addEventListener(
+      "change",
+      (event) => {
+
+        settings.showGitHubCTA =
+          event.target.checked;
+
+        markDirty();
+
+        renderPreview();
+
+      }
+    );
+
+}
+
+
+/* =========================
+   INPUT BINDING
+========================= */
+
+function bindInput(id, callback) {
+
+  const element =
+    document.getElementById(id);
+
+  if (!element) {
+    return;
+  }
+
+
+  element.addEventListener(
+    "input",
+    (event) => {
+
+      callback(
+        event.target.value
+      );
+
+      markDirty();
+
+      renderPreview();
+
+    }
+  );
+
+}
+
+
+/* =========================
+   PREVIEW
+========================= */
+
+function renderPreview() {
+
+  if (!siteData) {
+    return;
+  }
+
+
+  const site =
+    siteData.site;
+
+  const sections =
+    getArray("sections")
+      .filter(
+        (section) =>
+          section.enabled !== false
+      );
+
+
+  let html = "";
+
+
+  sections.forEach(
+    (section) => {
+
+      switch (section.type) {
+
+        case "hero":
+          html += renderPreviewHero(
+            section
+          );
+          break;
+
+        case "stats":
+          html += renderPreviewStats();
+          break;
+
+        case "projects":
+          html += renderPreviewProjects();
+          break;
+
+        case "updates":
+          html += renderPreviewUpdates();
+          break;
+
+        case "embeds":
+          html += renderPreviewEmbeds();
+          break;
+
+        case "links":
+          html += renderPreviewLinks();
+          break;
+
+        case "github":
+          html += renderPreviewGithub();
+          break;
+
+        case "text":
+          html += renderPreviewText(
+            section
+          );
+          break;
+
       }
 
-
-      if (
-        !response.ok ||
-        !result.success
-      ) {
-
-        throw new Error(
-          result.message ||
-          `保存に失敗しました (HTTP ${response.status})`
-        );
-
-      }
+    }
+  );
 
 
-      originalData =
-        JSON.parse(
-          JSON.stringify(data)
-        );
+  previewContent.innerHTML = html;
+}
 
 
-      markSaved();
+function renderPreviewHero(section) {
 
-      showToast(
-        "保存しました"
+  return `
+
+    <div class="preview-hero">
+
+      <div class="preview-kicker">
+        INDIE DEVELOPER
+      </div>
+
+      <h1>
+        ${escapeHtml(
+          section.title ||
+          siteData.site.tagline
+        )}
+      </h1>
+
+      <p>
+        ${escapeHtml(
+          section.description ||
+          siteData.site.description
+        )}
+      </p>
+
+    </div>
+
+  `;
+}
+
+
+function renderPreviewStats() {
+
+  const stats =
+    getArray("stats")
+      .filter(
+        (item) =>
+          item.enabled !== false
       );
 
 
-    } catch (error) {
+  if (!stats.length) {
+    return "";
+  }
 
-      console.error(
-        "[Maru Admin Save]",
-        error
+
+  return `
+
+    <div class="preview-block">
+
+      <h3>Quick Stats</h3>
+
+      <div class="preview-stat-grid">
+
+        ${stats
+          .map(
+            (stat) => `
+
+              <div class="preview-stat">
+
+                <span>
+                  ${escapeHtml(
+                    stat.label
+                  )}
+                </span>
+
+                <strong>
+                  ${escapeHtml(
+                    stat.value
+                  )}
+                </strong>
+
+              </div>
+
+            `
+          )
+          .join("")}
+
+      </div>
+
+    </div>
+
+  `;
+}
+
+
+function renderPreviewProjects() {
+
+  const projects =
+    getArray("projects")
+      .filter(
+        (project) =>
+          project.enabled !== false
       );
 
 
-      saveStatus.textContent =
-        error.message ||
-        "保存に失敗しました";
+  if (!projects.length) {
+    return "";
+  }
 
 
-      saveStatus.style.color =
-        "#d54848";
+  return `
+
+    <div class="preview-block">
+
+      <h3>Projects</h3>
+
+      ${projects
+        .map(
+          (project) => `
+
+            <div class="preview-project">
+
+              <strong>
+                ${escapeHtml(
+                  project.title
+                )}
+              </strong>
+
+              <p>
+                ${escapeHtml(
+                  project.description
+                )}
+              </p>
+
+            </div>
+
+          `
+        )
+        .join("")}
+
+    </div>
+
+  `;
+}
 
 
-      showToast(
-        "保存に失敗しました"
+function renderPreviewUpdates() {
+
+  const updates =
+    getArray("updates")
+      .filter(
+        (update) =>
+          update.enabled !== false
       );
 
 
-    } finally {
+  if (!updates.length) {
+    return "";
+  }
 
-      saveInProgress =
-        false;
+
+  return `
+
+    <div class="preview-block">
+
+      <h3>What's New</h3>
+
+      ${updates
+        .slice(0, 3)
+        .map(
+          (update) => `
+
+            <div class="preview-update">
+
+              <strong>
+                ${escapeHtml(
+                  update.title
+                )}
+              </strong>
+
+            </div>
+
+          `
+        )
+        .join("")}
+
+    </div>
+
+  `;
+}
 
 
-      saveButtons.forEach(
-        button => {
+function renderPreviewEmbeds() {
 
-          button.disabled =
-            false;
+  const embeds =
+    getArray("embeds")
+      .filter(
+        (embed) =>
+          embed.enabled !== false &&
+          embed.url
+      );
 
-          button.textContent =
-            "保存する";
 
+  if (!embeds.length) {
+    return "";
+  }
+
+
+  return embeds
+    .map(
+      (embed) => `
+
+        <div class="preview-block">
+
+          <h3>
+            ${escapeHtml(
+              embed.title
+            )}
+          </h3>
+
+          <div class="preview-embed">
+
+            <iframe
+              src="${escapeHtml(
+                embed.url
+              )}"
+              loading="lazy"
+              title="${escapeHtml(
+                embed.title
+              )}"
+            ></iframe>
+
+          </div>
+
+        </div>
+
+      `
+    )
+    .join("");
+}
+
+
+function renderPreviewLinks() {
+
+  const links =
+    getArray("links")
+      .filter(
+        (link) =>
+          link.enabled !== false
+      );
+
+
+  if (!links.length) {
+    return "";
+  }
+
+
+  return `
+
+    <div class="preview-block">
+
+      <h3>Links</h3>
+
+      ${links
+        .map(
+          (link) => `
+
+            <div class="preview-project">
+
+              <strong>
+                ${escapeHtml(
+                  link.label
+                )}
+              </strong>
+
+              <p>
+                ${escapeHtml(
+                  link.url
+                )}
+              </p>
+
+            </div>
+
+          `
+        )
+        .join("")}
+
+    </div>
+
+  `;
+}
+
+
+function renderPreviewGithub() {
+
+  return `
+
+    <div class="preview-block">
+
+      <h3>Open Source</h3>
+
+      <div class="preview-project">
+
+        <strong>
+          ${escapeHtml(
+            siteData.site.github ||
+            "GitHub"
+          )}
+        </strong>
+
+        <p>
+          Source code and projects.
+        </p>
+
+      </div>
+
+    </div>
+
+  `;
+}
+
+
+function renderPreviewText(section) {
+
+  return `
+
+    <div class="preview-block">
+
+      <h3>
+        ${escapeHtml(
+          section.title ||
+          "Text Section"
+        )}
+      </h3>
+
+      <p style="
+        margin:0;
+        color:#777e87;
+        font-size:9px;
+        line-height:1.7;
+      ">
+        ${escapeHtml(
+          section.description || ""
+        )}
+      </p>
+
+    </div>
+
+  `;
+}
+
+
+/* =========================
+   SAVE
+========================= */
+
+saveButton.addEventListener(
+  "click",
+  saveData
+);
+
+
+async function saveData() {
+
+  if (!requireAuth()) {
+    return;
+  }
+
+
+  const token =
+    getToken();
+
+
+  saveState.textContent =
+    "Saving...";
+
+  saveState.className =
+    "save-state saving";
+
+
+  saveButton.disabled = true;
+
+
+  try {
+
+    const response =
+      await fetch(
+        `${WORKER_URL}/admin/save`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            "Authorization":
+              `Bearer ${token}`
+          },
+
+          body: JSON.stringify({
+            file: "site-data.json",
+            content: JSON.stringify(
+              siteData,
+              null,
+              2
+            )
+          })
         }
       );
 
-    }
 
-  }
-
-
-  function resetData() {
-
-    if (!originalData) {
-      return;
-    }
+    const result =
+      await response.json();
 
 
-    if (!dirty) {
-      return;
-    }
-
-
-    const confirmed =
-      confirm(
-        "未保存の変更をすべて元に戻しますか？"
+    if (!response.ok) {
+      throw new Error(
+        result.message ||
+        result.error ||
+        `HTTP ${response.status}`
       );
-
-
-    if (!confirmed) {
-      return;
     }
 
 
-    applyData(
-      originalData
-    );
-
+    savedSnapshot =
+      clone(siteData);
 
     markSaved();
 
     showToast(
-      "変更を元に戻しました"
+      "Changes saved successfully."
     );
+
+
+  } catch (error) {
+
+    console.error(error);
+
+    saveState.textContent =
+      "Save failed";
+
+    saveState.className =
+      "save-state dirty";
+
+
+    showToast(
+      `Save failed: ${error.message}`
+    );
+
+
+  } finally {
+
+    saveButton.disabled = false;
 
   }
 
-
-  function setupSaveButtons() {
-
-    saveButtons.forEach(
-      button => {
-
-        button.addEventListener(
-          "click",
-          saveData
-        );
-
-      }
-    );
+}
 
 
-    resetButton?.addEventListener(
-      "click",
-      resetData
-    );
+/* =========================
+   RESET
+========================= */
 
-  }
+document.addEventListener(
+  "keydown",
+  (event) => {
 
+    if (
+      (event.ctrlKey ||
+       event.metaKey) &&
+      event.key.toLowerCase() === "s"
+    ) {
 
-  function setupLogout() {
+      event.preventDefault();
 
-    logoutButton?.addEventListener(
-      "click",
-      () => {
+      saveData();
 
-        if (
-          dirty &&
-          !confirm(
-            "未保存の変更があります。\nログアウトしますか？"
-          )
-        ) {
-          return;
-        }
-
-
-        sessionStorage.removeItem(
-          "maru_admin_token"
-        );
-
-        sessionStorage.removeItem(
-          "maru_admin_expires"
-        );
-
-
-        window.location.replace(
-          "./"
-        );
-
-      }
-    );
+    }
 
   }
+);
 
 
-  function setupKeyboardShortcut() {
+/* =========================
+   LOGOUT
+========================= */
 
-    document.addEventListener(
-      "keydown",
-      event => {
+document
+  .getElementById(
+    "logoutButton"
+  )
+  .addEventListener(
+    "click",
+    () => {
 
-        if (
-          (event.ctrlKey ||
-            event.metaKey) &&
-          event.key.toLowerCase() === "s"
-        ) {
+      sessionStorage.removeItem(
+        "maru_admin_token"
+      );
 
-          event.preventDefault();
+      sessionStorage.removeItem(
+        "maru_admin_expires"
+      );
 
-          saveData();
+      window.location.href = "./";
 
-        }
-
-      }
-    );
-
-  }
+    }
+  );
 
 
-  window.addEventListener(
-    "beforeunload",
-    event => {
+/* =========================
+   HELP
+========================= */
 
-      if (!dirty) {
-        return;
-      }
+const helpModal =
+  document.getElementById(
+    "helpModal"
+  );
+
+document
+  .getElementById(
+    "helpButton"
+  )
+  .addEventListener(
+    "click",
+    () => {
+
+      helpModal.classList.remove(
+        "hidden"
+      );
+
+    }
+  );
+
+
+document
+  .getElementById(
+    "closeHelpButton"
+  )
+  .addEventListener(
+    "click",
+    () => {
+
+      helpModal.classList.add(
+        "hidden"
+      );
+
+    }
+  );
+
+
+helpModal
+  .querySelector(
+    ".modal-backdrop"
+  )
+  .addEventListener(
+    "click",
+    () => {
+
+      helpModal.classList.add(
+        "hidden"
+      );
+
+    }
+  );
+
+
+/* =========================
+   PREVIEW REFRESH
+========================= */
+
+document
+  .getElementById(
+    "refreshPreviewButton"
+  )
+  .addEventListener(
+    "click",
+    () => {
+
+      renderPreview();
+
+      showToast(
+        "Preview refreshed."
+      );
+
+    }
+  );
+
+
+/* =========================
+   UNSAVED WARNING
+========================= */
+
+window.addEventListener(
+  "beforeunload",
+  (event) => {
+
+    if (
+      saveState.classList.contains(
+        "dirty"
+      )
+    ) {
 
       event.preventDefault();
 
       event.returnValue = "";
 
     }
-  );
-
-
-  setupNavigation();
-  setupFieldListeners();
-  setupSaveButtons();
-  setupLogout();
-  setupKeyboardShortcut();
-
-  loadData();
-
-})();
-const helpButton =
-  document.getElementById(
-    "help-button"
-  );
-
-const helpModal =
-  document.getElementById(
-    "help-modal"
-  );
-
-const helpClose =
-  document.getElementById(
-    "help-close"
-  );
-
-const helpOk =
-  document.getElementById(
-    "help-ok"
-  );
-
-const modalBackdrop =
-  helpModal?.querySelector(
-    ".modal-backdrop"
-  );
-
-
-function openHelp() {
-  helpModal?.classList.remove(
-    "hidden"
-  );
-}
-
-
-function closeHelp() {
-  helpModal?.classList.add(
-    "hidden"
-  );
-}
-
-
-helpButton?.addEventListener(
-  "click",
-  openHelp
-);
-
-
-helpClose?.addEventListener(
-  "click",
-  closeHelp
-);
-
-
-helpOk?.addEventListener(
-  "click",
-  closeHelp
-);
-
-
-modalBackdrop?.addEventListener(
-  "click",
-  closeHelp
-);
-
-
-document.addEventListener(
-  "keydown",
-  event => {
-
-    if (
-      event.key === "Escape"
-    ) {
-      closeHelp();
-    }
 
   }
 );
+
+
+/* =========================
+   INIT
+========================= */
+
+if (requireAuth()) {
+  loadData();
+}
