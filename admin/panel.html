@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>サイト管理 - maru_m4ru_maru</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+
+      background: #f4f7fb;
+      color: #111827;
+
+      font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        "Hiragino Sans",
+        Meiryo,
+        sans-serif;
+    }
+
+    .header {
+      height: 62px;
+
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      padding:
+        0
+        18px;
+
+      background: white;
+
+      border-bottom:
+        1px solid
+        #e1e7ee;
+    }
+
+    .header strong {
+      font-size: 14px;
+    }
+
+    .logout {
+      border: 0;
+
+      background: transparent;
+
+      color: #687486;
+
+      font-size: 12px;
+      font-weight: 700;
+
+      cursor: pointer;
+    }
+
+    .wrapper {
+      width: min(
+        calc(100% - 28px),
+        900px
+      );
+
+      margin: 30px auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+    }
+
+    .sub {
+      margin: 4px 0 24px;
+
+      color: #6f7a89;
+
+      font-size: 13px;
+    }
+
+    .card {
+      margin-bottom: 14px;
+
+      padding: 22px;
+
+      background: white;
+
+      border:
+        1px solid
+        #e1e7ee;
+
+      border-radius: 14px;
+    }
+
+    .card h2 {
+      margin: 0 0 16px;
+
+      font-size: 16px;
+    }
+
+    .field {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+
+      margin-bottom: 6px;
+
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+
+      padding:
+        10px
+        12px;
+
+      border:
+        1px solid
+        #d9e1e9;
+
+      border-radius: 9px;
+
+      background: #fbfcfe;
+
+      color: #111827;
+
+      font: inherit;
+
+      outline: none;
+    }
+
+    input {
+      height: 43px;
+    }
+
+    textarea {
+      min-height: 120px;
+
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: #1689d8;
+
+      box-shadow:
+        0 0 0 3px
+        rgba(22, 137, 216, .1);
+    }
+
+    .save {
+      min-height: 43px;
+
+      padding:
+        0
+        18px;
+
+      border: 0;
+
+      border-radius: 9px;
+
+      background: #1689d8;
+      color: white;
+
+      font-size: 12px;
+      font-weight: 800;
+
+      cursor: pointer;
+    }
+
+    .note {
+      margin: 10px 0 0;
+
+      color: #7b8796;
+
+      font-size: 11px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="header">
+
+    <strong>
+      maru_m4ru_maru / 管理画面
+    </strong>
+
+    <button
+      class="logout"
+      id="logout"
+    >
+      ログアウト
+    </button>
+
+  </header>
+
+
+  <main class="wrapper">
+
+    <h1>サイト管理</h1>
+
+    <p class="sub">
+      ホームページの情報を編集できます。
+    </p>
+
+
+    <section class="card">
+
+      <h2>基本情報</h2>
+
+      <div class="field">
+
+        <label for="site-name">
+          表示名
+        </label>
+
+        <input
+          id="site-name"
+          value="maru_m4ru_maru"
+        >
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="description">
+          説明
+        </label>
+
+        <textarea id="description">ScratchやWebを、もっと便利に。</textarea>
+
+      </div>
+
+    </section>
+
+
+    <section class="card">
+
+      <h2>まる Addons</h2>
+
+      <div class="field">
+
+        <label for="version">
+          最新バージョン
+        </label>
+
+        <input
+          id="version"
+          value="1.4.5"
+        >
+
+      </div>
+
+
+      <div class="field">
+
+        <label for="update">
+          最新アップデート
+        </label>
+
+        <textarea id="update">60FPS機能を追加し、表示を整理しました。</textarea>
+
+      </div>
+
+    </section>
+
+
+    <section class="card">
+
+      <button
+        class="save"
+        id="save"
+        type="button"
+      >
+        保存する
+      </button>
+
+      <p class="note">
+        現在は管理画面のUIまで実装されています。
+        保存APIは次の工程で接続します。
+      </p>
+
+    </section>
+
+  </main>
+
+
+  <script>
+
+    const auth =
+      sessionStorage.getItem(
+        "maru_admin_authenticated"
+      );
+
+    if (auth !== "1") {
+      window.location.href = "./";
+    }
+
+
+    document
+      .getElementById("logout")
+      .addEventListener(
+        "click",
+        () => {
+
+          sessionStorage.removeItem(
+            "maru_admin_authenticated"
+          );
+
+          window.location.href =
+            "./";
+
+        }
+      );
+
+
+    document
+      .getElementById("save")
+      .addEventListener(
+        "click",
+        () => {
+
+          alert(
+            "保存機能は次の工程で接続します。"
+          );
+
+        }
+      );
+
+  </script>
+
+</body>
+</html>
