@@ -2,8 +2,12 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>まる - 管理画面</title>
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>管理者ログイン - maru_m4ru_maru</title>
 
   <style>
     * {
@@ -14,136 +18,130 @@
       margin: 0;
       min-height: 100vh;
 
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: grid;
+      place-items: center;
 
       background: #f4f7fb;
-      color: #111923;
+      color: #111827;
 
       font-family:
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
         "Hiragino Sans",
-        "Hiragino Kaku Gothic ProN",
         Meiryo,
         sans-serif;
     }
 
-    .login-box {
-      width: min(92vw, 420px);
+    .box {
+      width: min(
+        calc(100% - 28px),
+        420px
+      );
 
-      padding: 32px;
+      padding: 30px;
 
-      border: 1px solid #dfe5ec;
-      border-radius: 18px;
+      border:
+        1px solid
+        #e0e6ee;
 
-      background: #ffffff;
+      border-radius: 16px;
+
+      background: white;
 
       box-shadow:
-        0 20px 50px rgba(0, 0, 0, 0.08);
-    }
-
-    .logo {
-      width: 48px;
-      height: 48px;
-
-      display: grid;
-      place-items: center;
-
-      margin-bottom: 18px;
-
-      border-radius: 13px;
-
-      background: #5bbcff;
-      color: #061019;
-
-      font-size: 24px;
-      font-weight: 900;
+        0 14px 40px
+        rgba(20, 35, 55, .08);
     }
 
     h1 {
-      margin: 0 0 8px;
-      font-size: 28px;
+      margin: 0 0 7px;
+
+      font-size: 26px;
     }
 
     .description {
-      margin: 0 0 26px;
+      margin: 0 0 24px;
+
       color: #6f7a89;
-      font-size: 14px;
+
+      font-size: 13px;
     }
 
     .field {
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     label {
       display: block;
-      margin-bottom: 7px;
 
-      font-size: 13px;
-      font-weight: 700;
+      margin-bottom: 6px;
+
+      font-size: 12px;
+      font-weight: 800;
     }
 
     input {
       width: 100%;
-      height: 46px;
+      height: 44px;
 
-      padding: 0 13px;
+      padding:
+        0
+        12px;
 
-      border: 1px solid #d8e0e9;
-      border-radius: 10px;
+      border:
+        1px solid
+        #d8e0e9;
 
-      background: #f9fbfd;
-      color: #111923;
+      border-radius: 9px;
+
+      outline: none;
+
+      background: #fbfcfe;
 
       font: inherit;
-      outline: none;
     }
 
     input:focus {
-      border-color: #5bbcff;
+      border-color: #1689d8;
 
       box-shadow:
-        0 0 0 3px rgba(91, 188, 255, 0.14);
+        0 0 0 3px
+        rgba(22, 137, 216, .1);
     }
 
     button {
       width: 100%;
-      height: 46px;
+      height: 44px;
 
-      margin-top: 8px;
+      margin-top: 5px;
 
       border: 0;
-      border-radius: 10px;
+      border-radius: 9px;
 
       background: #1689d8;
       color: white;
 
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 800;
 
       cursor: pointer;
     }
 
-    button:hover {
-      background: #0f79c2;
-    }
-
     button:disabled {
-      opacity: 0.6;
+      opacity: .6;
       cursor: not-allowed;
     }
 
     #message {
-      min-height: 22px;
+      min-height: 20px;
 
-      margin-top: 14px;
+      margin-top: 12px;
 
       color: #d33;
-      font-size: 13px;
-      font-weight: 600;
+
+      font-size: 12px;
+      font-weight: 700;
 
       text-align: center;
     }
@@ -151,31 +149,25 @@
     .back {
       display: block;
 
-      margin-top: 20px;
+      margin-top: 18px;
 
-      color: #6f7a89;
+      color: #7a8594;
 
-      font-size: 12px;
+      font-size: 11px;
+
       text-align: center;
-      text-decoration: none;
-    }
-
-    .back:hover {
-      color: #1689d8;
     }
   </style>
 </head>
 
 <body>
 
-  <main class="login-box">
+  <main class="box">
 
-    <div class="logo">ま</div>
-
-    <h1>管理画面</h1>
+    <h1>管理者ログイン</h1>
 
     <p class="description">
-      まる公式サイトの管理者ログイン
+      maru_m4ru_maru 公式サイト
     </p>
 
     <form id="login-form">
