@@ -1,12 +1,11 @@
 {
   "site": {
     "name": "maru_m4ru_maru",
-    "tagline": "ScratchやWebを、もっと便利に。",
+    "tagline": "Test",
     "description": "maru_m4ru_maru が制作しているツール・サービス・プロジェクトを紹介しています。",
     "avatar": "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png",
     "github": "https://github.com/maru-m4ru-maru"
   },
-
   "navigation": [
     {
       "id": "nav-projects",
@@ -30,7 +29,6 @@
       "newTab": true
     }
   ],
-
   "stats": [
     {
       "id": "stat-featured",
@@ -61,7 +59,6 @@
       "enabled": true
     }
   ],
-
   "projects": [
     {
       "id": "project-addons",
@@ -112,7 +109,6 @@
       "enabled": true
     }
   ],
-
   "updates": [
     {
       "id": "update-addons-145",
@@ -124,11 +120,8 @@
       "enabled": true
     }
   ],
-
   "embeds": [],
-
   "links": [],
-
   "sections": [
     {
       "id": "section-hero",
@@ -162,7 +155,6 @@
       "enabled": true
     }
   ],
-
   "settings": {
     "showFooter": true,
     "showGitHubCTA": true,
