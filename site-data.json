@@ -101,6 +101,15 @@
   ],
   "updates": [
     {
+      "id": "update-mtjkqnqn-71gqx2",
+      "project": "Scratch Analyzer",
+      "title": "Projectsに追加しました",
+      "description": "ProjectsにScratch Analyzerを追加しました。アップデート情報も載せていきます。",
+      "version": "β版",
+      "date": "2026.09.02",
+      "enabled": true
+    },
+    {
       "id": "update-addons-145",
       "project": "まる Addons",
       "title": "60FPS機能を追加し、表示を整理しました。",
