@@ -4404,3 +4404,11 @@ window.addEventListener(
 if (requireAuth()) {
   loadData();
 }
+const openEditorButton =
+  document.getElementById("openEditorButton");
+
+if (openEditorButton) {
+  openEditorButton.addEventListener("click", () => {
+    window.location.href = "../editor/index.html";
+  });
+}
