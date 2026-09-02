@@ -552,54 +552,6 @@ function renderHero(section) {
           </div>
 
 
-          <div class="hero-profile">
-
-            <div class="profile-card">
-
-              <div
-                class="profile-glow"
-              ></div>
-
-
-              <img
-                src="${escapeHtml(
-                  site.avatar ||
-                  DEFAULT_AVATAR
-                )}"
-                alt="${escapeHtml(
-                  site.name ||
-                  "maru_m4ru_maru"
-                )}"
-                class="profile-avatar"
-              >
-
-
-              <div
-                class="profile-name"
-              >
-                ${escapeHtml(
-                  site.name ||
-                  "maru_m4ru_maru"
-                )}
-              </div>
-
-
-              <div
-                class="profile-status"
-              >
-
-                <span
-                  class="status-dot"
-                ></span>
-
-                ONLINE
-
-              </div>
-
-            </div>
-
-          </div>
-
         </div>
 
       </div>
