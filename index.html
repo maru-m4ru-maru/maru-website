@@ -15,6 +15,11 @@
     content="maru_m4ru_maru が制作しているツール・サービス・プロジェクトを紹介しています。"
   >
 
+  <meta
+    name="theme-color"
+    content="#0b0d12"
+  >
+
   <title>
     maru_m4ru_maru - Official Website
   </title>
@@ -24,7 +29,6 @@
     href="./style.css"
   >
 </head>
-
 
 <body>
 
@@ -39,6 +43,7 @@
       <a
         href="#top"
         class="brand"
+        aria-label="ホーム"
       >
 
         <img
@@ -57,10 +62,10 @@
 
       </a>
 
-
       <nav
         class="nav"
         id="siteNavigation"
+        aria-label="メインナビゲーション"
       ></nav>
 
     </div>
@@ -72,12 +77,14 @@
        MAIN
   ========================== -->
 
-  <main id="top">
-
-    <!-- CMS sections are rendered here -->
+  <main
+    id="top"
+    class="site-main"
+  >
 
     <div
       id="siteSections"
+      class="site-sections"
     ></div>
 
   </main>
@@ -94,7 +101,7 @@
 
     <div class="container footer-inner">
 
-      <div>
+      <div class="footer-brand">
 
         <strong
           data-site-name
@@ -102,15 +109,14 @@
           maru_m4ru_maru
         </strong>
 
-        <span>
+        <span class="footer-copy">
           ©
-          <span
-            data-current-year
-          ></span>
+          <span data-current-year>
+            2026
+          </span>
         </span>
 
       </div>
-
 
       <div
         class="footer-links"
