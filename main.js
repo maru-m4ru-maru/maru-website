@@ -1,4 +1,4 @@
-const DATA_URL = "https://raw.githubusercontent.com/maru-m4ru-maru/maru-website/main/site-data.json";
+const DATA_URL = "https://maru-website-admin.maru-0727.workers.dev/site-data";
 
 const DEFAULT_AVATAR =
   "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png";
