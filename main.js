@@ -1,1811 +1,1137 @@
-const SITE_DATA_URL =
-  "./site-data.json";
-
+const SITE_DATA_URL = "./site-data.json";
 
 const DEFAULT_AVATAR =
   "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png";
 
-
-let siteData = null;
-
-
 /* =========================
-   共通
+   HELPERS
 ========================= */
 
-function escapeHtml(value) {
+function setText(selector, value) {
+  const elements = document.querySelectorAll(selector);
 
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-
+  elements.forEach((element) => {
+    element.textContent =
+      value === undefined || value === null
+        ? ""
+        : String(value);
+  });
 }
 
+function setAttribute(selector, attribute, value) {
+  const elements = document.querySelectorAll(selector);
+
+  elements.forEach((element) => {
+    if (value === undefined || value === null || value === "") {
+      element.removeAttribute(attribute);
+      return;
+    }
+
+    element.setAttribute(attribute, String(value));
+  });
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 function normalizeVersion(version) {
-
   if (!version) {
     return "";
   }
 
-  const value =
-    String(version).trim();
+  const value = String(version).trim();
 
-  if (
-    value.startsWith("v")
-  ) {
-    return value;
-  }
-
-  return `v${value}`;
-}
-
-
-function isEnabled(item) {
-
-  return (
-    item &&
-    item.enabled !== false
-  );
-
-}
-
-
-function safeUrl(value) {
-
-  if (
-    typeof value !== "string" ||
-    !value.trim()
-  ) {
+  if (!value) {
     return "";
   }
 
-
-  const url =
-    value.trim();
-
-
-  /*
-   * 相対URLとハッシュは許可
-   */
-
-  if (
-    url.startsWith("/") ||
-    url.startsWith("./") ||
-    url.startsWith("../") ||
-    url.startsWith("#")
-  ) {
-    return url;
-  }
-
-
-  try {
-
-    const parsed =
-      new URL(url);
-
-
-    if (
-      parsed.protocol === "https:" ||
-      parsed.protocol === "http:"
-    ) {
-      return parsed.href;
-    }
-
-
-    return "";
-
-  } catch {
-
-    return "";
-
-  }
-
+  return value.startsWith("v")
+    ? value
+    : `v${value}`;
 }
-
 
 /* =========================
-   DATA LOAD
+   SITE DATA
 ========================= */
 
+let currentSiteData = null;
+
 async function loadSiteData() {
-
   try {
+    const cacheBuster =
+      `cb=${Date.now()}`;
 
-    const response =
-      await fetch(
-        `${SITE_DATA_URL}?cb=${Date.now()}`,
-        {
-          cache: "no-store"
-        }
-      );
-
-
-    if (!response.ok) {
-
-      throw new Error(
-        `site-data.json returned HTTP ${response.status}`
-      );
-
-    }
-
-
-    siteData =
-      await response.json();
-
-
-    normalizeData();
-
-
-    renderSite();
-
-
-    console.log(
-      "[maru-website] CMS data loaded",
-      siteData
+    const response = await fetch(
+      `${SITE_DATA_URL}?${cacheBuster}`,
+      {
+        cache: "no-store"
+      }
     );
 
+    if (!response.ok) {
+      throw new Error(
+        `site-data.json returned ${response.status}`
+      );
+    }
 
+    const data = await response.json();
+
+    if (
+      !data ||
+      typeof data !== "object" ||
+      Array.isArray(data)
+    ) {
+      throw new Error(
+        "site-data.json is not a valid object"
+      );
+    }
+
+    currentSiteData = data;
+
+    applySiteData(data);
+
+    console.log(
+      "[maru-website] site data loaded",
+      data
+    );
   } catch (error) {
-
-    console.error(
-      "[maru-website] Failed to load CMS data",
+    console.warn(
+      "[maru-website] Failed to load site-data.json",
       error
     );
 
-
-    renderFallback();
-
+    /*
+      JSONが取得できなくても、
+      index.html に書かれている固定内容を
+      そのまま表示できるようにする。
+    */
   }
-
 }
 
-
 /* =========================
-   NORMALIZE
+   APPLY SITE DATA
 ========================= */
 
-function normalizeData() {
+function applySiteData(data) {
+  const site =
+    data.site &&
+    typeof data.site === "object"
+      ? data.site
+      : {};
 
-  if (
-    !siteData ||
-    typeof siteData !== "object"
-  ) {
-    siteData = {};
-  }
-
-
-  if (
-    !siteData.site ||
-    typeof siteData.site !== "object"
-  ) {
-    siteData.site = {};
-  }
-
-
-  siteData.site.name ||=
+  const siteName =
+    site.name ||
     "maru_m4ru_maru";
 
-
-  siteData.site.tagline ||=
+  const tagline =
+    site.tagline ||
     "ScratchやWebを、もっと便利に。";
 
-
-  siteData.site.description ||=
+  const description =
+    site.description ||
     "maru_m4ru_maru が制作しているツール・サービス・プロジェクトを紹介しています。";
 
-
-  siteData.site.avatar ||=
+  const avatar =
+    site.avatar ||
     DEFAULT_AVATAR;
 
-
-  siteData.site.github ||=
+  const github =
+    site.github ||
     "https://github.com/maru-m4ru-maru";
 
+  /* -------------------------
+     SITE BASIC
+  ------------------------- */
 
-  const arrays = [
-    "navigation",
-    "stats",
-    "projects",
-    "updates",
-    "embeds",
-    "links",
-    "sections"
-  ];
-
-
-  arrays.forEach(
-    (name) => {
-
-      if (
-        !Array.isArray(
-          siteData[name]
-        )
-      ) {
-        siteData[name] = [];
-      }
-
-    }
+  setText(
+    "[data-site-name]",
+    siteName
   );
 
+  setText(
+    "[data-description]",
+    description
+  );
 
-  if (
-    !siteData.settings ||
-    typeof siteData.settings !== "object"
-  ) {
+  setAttribute(
+    "[data-avatar]",
+    "src",
+    avatar
+  );
 
-    siteData.settings = {};
+  setAttribute(
+    "[data-avatar]",
+    "alt",
+    siteName
+  );
 
+  document.title =
+    `${siteName} - Official Website`;
+
+  const metaDescription =
+    document.querySelector(
+      'meta[name="description"]'
+    );
+
+  if (metaDescription) {
+    metaDescription.setAttribute(
+      "content",
+      description
+    );
   }
 
+  /* -------------------------
+     TAGLINE
+     data-tagline がある場合に反映
+  ------------------------- */
 
-  if (
-    typeof siteData.settings.showFooter !==
-    "boolean"
-  ) {
+  setText(
+    "[data-tagline]",
+    tagline
+  );
 
-    siteData.settings.showFooter =
-      true;
+  /* -------------------------
+     GITHUB LINKS
+  ------------------------- */
 
-  }
+  const githubLinks =
+    document.querySelectorAll(
+      'a[href*="github.com/maru-m4ru-maru"]'
+    );
 
+  githubLinks.forEach((link) => {
+    link.href = github;
 
-  if (
-    typeof siteData.settings.showGitHubCTA !==
-    "boolean"
-  ) {
+    if (
+      link.target === "_blank"
+    ) {
+      link.rel =
+        "noopener noreferrer";
+    }
+  });
 
-    siteData.settings.showGitHubCTA =
-      true;
+  /* -------------------------
+     NAVIGATION
+  ------------------------- */
 
-  }
+  applyNavigation(
+    data.navigation
+  );
 
+  /* -------------------------
+     STATS
+  ------------------------- */
+
+  applyStats(
+    data.stats
+  );
+
+  /* -------------------------
+     PROJECTS
+  ------------------------- */
+
+  applyProjects(
+    data.projects
+  );
+
+  /* -------------------------
+     FEATURED PROJECT
+  ------------------------- */
+
+  applyFeaturedProject(
+    data.projects
+  );
+
+  /* -------------------------
+     UPDATES
+  ------------------------- */
+
+  applyUpdates(
+    data.updates
+  );
+
+  /* -------------------------
+     SECTIONS
+  ------------------------- */
+
+  applySections(
+    data.sections
+  );
+
+  /* -------------------------
+     SETTINGS
+  ------------------------- */
+
+  applySettings(
+    data.settings
+  );
 }
-
-
-/* =========================
-   SITE
-========================= */
-
-function renderSite() {
-
-  renderNavigation();
-
-  renderSections();
-
-  renderFooter();
-
-  updateMeta();
-
-}
-
 
 /* =========================
    NAVIGATION
 ========================= */
 
-function renderNavigation() {
+function applyNavigation(navigation) {
+  if (!Array.isArray(navigation)) {
+    return;
+  }
 
-  const navigation =
-    document.getElementById(
-      "siteNavigation"
+  const nav = document.querySelector(".nav");
+
+  if (!nav) {
+    return;
+  }
+
+  const enabledItems =
+    navigation.filter(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        item.enabled !== false
     );
 
+  /*
+    管理画面で設定したナビゲーションを反映。
+  */
 
-  if (!navigation) {
+  if (enabledItems.length === 0) {
+    nav.innerHTML = "";
     return;
   }
 
+  nav.innerHTML =
+    enabledItems
+      .map((item) => {
+        const label =
+          escapeHtml(item.label || "");
 
-  const items =
-    siteData.navigation
-      .filter(isEnabled);
+        const href =
+          escapeHtml(item.href || "#");
 
+        const target =
+          item.newTab
+            ? ' target="_blank" rel="noopener noreferrer"'
+            : "";
 
-  navigation.innerHTML =
-    items
-      .map(
-        (item) => {
-
-          const href =
-            safeUrl(item.href);
-
-
-          if (!href) {
-            return "";
-          }
-
-
-          const target =
-            item.newTab
-              ? ' target="_blank" rel="noopener noreferrer"'
-              : "";
-
-
-          return `
-            <a
-              href="${escapeHtml(href)}"
-              ${target}
-            >
-              ${escapeHtml(
-                item.label ||
-                "Link"
-              )}
-            </a>
-          `;
-
-        }
-      )
+        return `
+          <a
+            href="${href}"
+            ${target}
+          >
+            ${label}
+          </a>
+        `;
+      })
       .join("");
 
+  setupSmoothLinks();
 }
-
-
-/* =========================
-   SECTIONS
-========================= */
-
-function renderSections() {
-
-  const container =
-    document.getElementById(
-      "siteSections"
-    );
-
-
-  if (!container) {
-    return;
-  }
-
-
-  const sections =
-    [...siteData.sections]
-      .filter(isEnabled);
-
-
-  /*
-   * sectionsが空でも
-   * CMSのデータから最低限表示する。
-   */
-
-  if (!sections.length) {
-
-    container.innerHTML =
-      renderDefaultHome();
-
-    return;
-
-  }
-
-
-  container.innerHTML =
-    sections
-      .map(
-        (section) =>
-          renderSection(
-            section
-          )
-      )
-      .join("");
-
-
-}
-
-
-/* =========================
-   SECTION ROUTER
-========================= */
-
-function renderSection(
-  section
-) {
-
-  switch (
-    section.type
-  ) {
-
-    case "hero":
-      return renderHero(
-        section
-      );
-
-
-    case "stats":
-      return renderStats(
-        section
-      );
-
-
-    case "projects":
-      return renderProjects(
-        section
-      );
-
-
-    case "updates":
-      return renderUpdates(
-        section
-      );
-
-
-    case "embeds":
-      return renderEmbeds(
-        section
-      );
-
-
-    case "links":
-      return renderLinks(
-        section
-      );
-
-
-    case "github":
-      return renderGithub(
-        section
-      );
-
-
-    case "text":
-      return renderText(
-        section
-      );
-
-
-    default:
-      return "";
-
-  }
-
-}
-
-
-/* =========================
-   HERO
-========================= */
-
-function renderHero(
-  section
-) {
-
-  const title =
-    section.title ||
-    siteData.site.tagline;
-
-
-  const description =
-    section.description ||
-    siteData.site.description;
-
-
-  return `
-
-    <section class="hero">
-
-      <div class="container">
-
-        <div class="hero-grid">
-
-          <div class="hero-main">
-
-            <div class="eyebrow">
-
-              <span class="status-dot"></span>
-
-              Indie Developer
-
-            </div>
-
-
-            <h1>
-
-              ${formatHeroTitle(
-                title
-              )}
-
-            </h1>
-
-
-            <p class="hero-description">
-
-              ${escapeHtml(
-                description
-              )}
-
-            </p>
-
-
-            <div class="hero-actions">
-
-              <a
-                href="#projects"
-                class="button button-primary"
-              >
-                Projects
-              </a>
-
-
-              <a
-                href="${escapeHtml(
-                  safeUrl(
-                    siteData.site.github
-                  )
-                )}"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="button button-secondary"
-              >
-                GitHub
-              </a>
-
-            </div>
-
-          </div>
-
-
-          <div class="hero-side">
-
-            <div class="profile-card">
-
-              <div class="profile-top">
-
-                <img
-                  src="${escapeHtml(
-                    siteData.site.avatar ||
-                    DEFAULT_AVATAR
-                  )}"
-                  alt="${escapeHtml(
-                    siteData.site.name
-                  )}"
-                  class="profile-avatar"
-                >
-
-
-                <div>
-
-                  <strong>
-                    ${escapeHtml(
-                      siteData.site.name
-                    )}
-                  </strong>
-
-                  <span>
-                    Creator / Developer
-                  </span>
-
-                </div>
-
-              </div>
-
-
-              <div class="profile-line"></div>
-
-
-              <div class="profile-tags">
-
-                <span>Scratch</span>
-                <span>Web</span>
-                <span>JavaScript</span>
-                <span>Python</span>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-  `;
-
-}
-
-
-function formatHeroTitle(
-  text
-) {
-
-  const value =
-    String(text);
-
-
-  /*
-   * 「、」を基準に
-   * 2行っぽく見せる。
-   */
-
-  if (
-    value.includes("、")
-  ) {
-
-    const index =
-      value.indexOf("、") + 1;
-
-
-    return `
-      ${escapeHtml(
-        value.slice(0, index)
-      )}
-      <br>
-      <span>
-        ${escapeHtml(
-          value.slice(index)
-        )}
-      </span>
-    `;
-
-  }
-
-
-  return escapeHtml(
-    value
-  );
-
-}
-
 
 /* =========================
    STATS
 ========================= */
 
-function renderStats() {
-
-  const stats =
-    siteData.stats
-      .filter(isEnabled);
-
-
-  if (!stats.length) {
-    return "";
+function applyStats(stats) {
+  if (!Array.isArray(stats)) {
+    return;
   }
 
+  const cards =
+    document.querySelectorAll(
+      ".stats-grid .stat-card"
+    );
 
-  return `
+  if (!cards.length) {
+    return;
+  }
 
-    <section class="stats-section">
+  stats
+    .filter(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        item.enabled !== false
+    )
+    .slice(0, cards.length)
+    .forEach((item, index) => {
+      const card =
+        cards[index];
 
-      <div class="container">
+      const label =
+        card.querySelector(
+          ".stat-label"
+        );
 
-        <div class="stats-grid">
+      const value =
+        card.querySelector(
+          ".stat-value"
+        );
 
-          ${stats
-            .map(
-              (stat) => `
+      const meta =
+        card.querySelector(
+          ".stat-meta"
+        );
 
-                <div class="stat-card">
+      if (label) {
+        label.textContent =
+          item.label || "";
+      }
 
-                  <span class="stat-label">
+      if (value) {
+        value.textContent =
+          item.value || "";
+      }
 
-                    ${escapeHtml(
-                      stat.label ||
-                      ""
-                    )}
+      if (meta) {
+        meta.textContent =
+          item.meta || "";
+      }
+    });
 
-                  </span>
+  /*
+    もし管理画面で件数を減らした場合、
+    余ったカードを非表示にする。
+  */
 
+  stats
+    .filter(
+      (item) =>
+        item &&
+        typeof item === "object" &&
+        item.enabled !== false
+    )
+    .slice(0, cards.length);
 
-                  <strong class="stat-value">
+  cards.forEach(
+    (card, index) => {
+      const exists =
+        stats
+          .filter(
+            (item) =>
+              item &&
+              typeof item === "object" &&
+              item.enabled !== false
+          )
+          .slice(0, cards.length)
+          [index];
 
-                    ${escapeHtml(
-                      stat.value ||
-                      ""
-                    )}
-
-                  </strong>
-
-
-                  <span class="stat-meta">
-
-                    ${escapeHtml(
-                      stat.meta ||
-                      ""
-                    )}
-
-                  </span>
-
-                </div>
-
-              `
-            )
-            .join("")}
-
-        </div>
-
-      </div>
-
-    </section>
-
-  `;
-
+      card.style.display =
+        exists
+          ? ""
+          : "none";
+    }
+  );
 }
-
 
 /* =========================
    PROJECTS
 ========================= */
 
-function renderProjects(
-  section
-) {
-
-  const projects =
-    siteData.projects
-      .filter(isEnabled);
-
-
-  if (!projects.length) {
-    return "";
+function applyProjects(projects) {
+  if (!Array.isArray(projects)) {
+    return;
   }
 
+  const grid =
+    document.querySelector(
+      ".projects-grid"
+    );
 
-  return `
+  if (!grid) {
+    return;
+  }
 
-    <section
-      class="section projects-section"
-      id="projects"
-    >
+  const items =
+    projects.filter(
+      (project) =>
+        project &&
+        typeof project === "object" &&
+        project.enabled !== false &&
+        project.featured !== true
+    );
 
-      <div class="container">
+  /*
+    featured=true のプロジェクトは
+    FEATURED PROJECT 側で表示するため
+    Other Projects から除外。
+  */
 
-        <div class="section-heading">
+  if (items.length === 0) {
+    grid.innerHTML = "";
+    return;
+  }
 
-          <div>
+  grid.innerHTML =
+    items
+      .map((project) => {
+        const title =
+          escapeHtml(
+            project.title ||
+            "Untitled Project"
+          );
 
-            <span class="section-kicker">
-              PROJECTS
-            </span>
+        const description =
+          escapeHtml(
+            project.description || ""
+          );
 
-            <h2>
-              ${escapeHtml(
-                section.title ||
-                "Projects"
-              )}
-            </h2>
+        const status =
+          escapeHtml(
+            project.status ||
+            "Unknown"
+          );
 
-          </div>
-
-        </div>
-
-
-        <div class="projects-grid">
-
-          ${projects
-            .map(
-              renderProjectCard
-            )
-            .join("")}
-
-        </div>
-
-      </div>
-
-    </section>
-
-  `;
-
-}
-
-
-function renderProjectCard(
-  project
-) {
-
-  const url =
-    safeUrl(project.url);
-
-
-  const github =
-    safeUrl(project.github);
-
-
-  const tags =
-    Array.isArray(
-      project.tags
-    )
-      ? project.tags
-      : [];
-
-
-  return `
-
-    <article
-      class="project-card"
-    >
-
-      <div class="project-card-top">
-
-        <div class="project-icon">
-
-          ${escapeHtml(
+        const icon =
+          escapeHtml(
             project.icon ||
             "PR"
-          )}
+          );
 
-        </div>
+        const tags =
+          Array.isArray(project.tags)
+            ? project.tags
+                .slice(0, 10)
+                .map(
+                  (tag) => `
+                    <span>
+                      ${escapeHtml(tag)}
+                    </span>
+                  `
+                )
+                .join("")
+            : "";
 
+        const url =
+          project.url
+            ? escapeHtml(project.url)
+            : "";
 
-        <span class="project-status">
+        const github =
+          project.github
+            ? escapeHtml(project.github)
+            : "";
 
-          ${escapeHtml(
-            project.status ||
-            "DRAFT"
-          )}
+        return `
+          <article class="project-card">
 
-        </span>
+            <div class="project-card-top">
 
-      </div>
+              <div class="project-icon">
+                ${icon}
+              </div>
 
-
-      <h3>
-        ${escapeHtml(
-          project.title ||
-          "Untitled Project"
-        )}
-      </h3>
-
-
-      <p>
-
-        ${escapeHtml(
-          project.description ||
-          ""
-        )}
-
-      </p>
-
-
-      <div class="project-tags">
-
-        ${tags
-          .map(
-            (tag) => `
-              <span>
-                ${escapeHtml(
-                  tag
-                )}
+              <span class="project-status">
+                ${status}
               </span>
-            `
-          )
-          .join("")}
-
-      </div>
-
-
-      ${
-        url || github
-          ? `
-
-            <div
-              class="project-links"
-              style="
-                display:flex;
-                gap:8px;
-                margin-top:16px;
-              "
-            >
-
-              ${
-                url
-                  ? `
-                    <a
-                      href="${escapeHtml(
-                        url
-                      )}"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="text-link"
-                    >
-                      Open ↗
-                    </a>
-                  `
-                  : ""
-              }
-
-
-              ${
-                github
-                  ? `
-                    <a
-                      href="${escapeHtml(
-                        github
-                      )}"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="text-link"
-                    >
-                      GitHub ↗
-                    </a>
-                  `
-                  : ""
-              }
 
             </div>
 
-          `
-          : ""
-      }
+            <h3>
+              ${title}
+            </h3>
 
-    </article>
+            <p>
+              ${description}
+            </p>
 
-  `;
+            <div class="project-tags">
+              ${tags}
+            </div>
 
+            ${
+              url || github
+                ? `
+                  <div
+                    style="
+                      display:flex;
+                      gap:10px;
+                      margin-top:18px;
+                      flex-wrap:wrap;
+                    "
+                  >
+
+                    ${
+                      url
+                        ? `
+                          <a
+                            href="${url}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-link"
+                          >
+                            Open ↗
+                          </a>
+                        `
+                        : ""
+                    }
+
+                    ${
+                      github
+                        ? `
+                          <a
+                            href="${github}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            class="text-link"
+                          >
+                            GitHub ↗
+                          </a>
+                        `
+                        : ""
+                    }
+
+                  </div>
+                `
+                : ""
+            }
+
+          </article>
+        `;
+      })
+      .join("");
 }
 
+/* =========================
+   FEATURED PROJECT
+========================= */
+
+function applyFeaturedProject(projects) {
+  if (!Array.isArray(projects)) {
+    return;
+  }
+
+  const featured =
+    projects.find(
+      (project) =>
+        project &&
+        typeof project === "object" &&
+        project.featured === true &&
+        project.enabled !== false
+    );
+
+  if (!featured) {
+    return;
+  }
+
+  const heading =
+    document.querySelector(
+      ".featured-section .section-heading h2"
+    );
+
+  if (heading) {
+    heading.textContent =
+      featured.title ||
+      "Featured Project";
+  }
+
+  const badge =
+    document.querySelector(
+      ".featured-section .project-badge"
+    );
+
+  if (badge) {
+    badge.textContent =
+      featured.status ||
+      "Featured Project";
+  }
+
+  const title =
+    document.querySelector(
+      ".featured-section .featured-content h3"
+    );
+
+  if (title && featured.title) {
+    title.textContent =
+      featured.title;
+  }
+
+  const description =
+    document.querySelector(
+      ".featured-section .featured-content > p"
+    );
+
+  if (
+    description &&
+    featured.description
+  ) {
+    description.textContent =
+      featured.description;
+  }
+
+  const openProject =
+    document.querySelector(
+      ".featured-section .button-primary"
+    );
+
+  if (
+    openProject &&
+    featured.url
+  ) {
+    openProject.href =
+      featured.url;
+  }
+
+  const sourceCode =
+    document.querySelector(
+      ".featured-section .button-ghost"
+    );
+
+  if (
+    sourceCode &&
+    featured.github
+  ) {
+    sourceCode.href =
+      featured.github;
+  }
+}
 
 /* =========================
    UPDATES
 ========================= */
 
-function renderUpdates(
-  section
-) {
-
-  const updates =
-    siteData.updates
-      .filter(isEnabled);
-
-
-  if (!updates.length) {
-    return "";
+function applyUpdates(updates) {
+  if (!Array.isArray(updates)) {
+    return;
   }
-
 
   const latest =
-    updates[0];
-
-
-  return `
-
-    <section
-      class="section updates-section"
-      id="updates"
-    >
-
-      <div class="container">
-
-        <div class="section-heading">
-
-          <div>
-
-            <span class="section-kicker">
-              LATEST UPDATE
-            </span>
-
-            <h2>
-
-              ${escapeHtml(
-                section.title ||
-                "What's New"
-              )}
-
-            </h2>
-
-          </div>
-
-        </div>
-
-
-        <div class="update-card">
-
-          <div class="update-date">
-
-            <span>
-              Latest
-            </span>
-
-            <strong>
-
-              ${escapeHtml(
-                latest.date ||
-                "—"
-              )}
-
-            </strong>
-
-          </div>
-
-
-          <div class="update-main">
-
-            <div class="update-label">
-
-              ${escapeHtml(
-                latest.project ||
-                "Update"
-              )}
-
-            </div>
-
-
-            <h3>
-
-              ${escapeHtml(
-                latest.title ||
-                ""
-              )}
-
-            </h3>
-
-
-            <p>
-
-              ${escapeHtml(
-                latest.description ||
-                ""
-              )}
-
-            </p>
-
-          </div>
-
-
-          <div class="update-version">
-
-            <span>
-              Version
-            </span>
-
-            <strong>
-
-              ${escapeHtml(
-                normalizeVersion(
-                  latest.version
-                )
-              )}
-
-            </strong>
-
-          </div>
-
-        </div>
-
-      </div>
-
-    </section>
-
-  `;
-
-}
-
-
-/* =========================
-   EMBEDS
-========================= */
-
-function renderEmbeds(
-  section
-) {
-
-  const embeds =
-    siteData.embeds
-      .filter(isEnabled)
-      .filter(
-        (embed) =>
-          safeUrl(
-            embed.url
-          )
-      );
-
-
-  if (!embeds.length) {
-    return "";
-  }
-
-
-  return `
-
-    <section
-      class="section embeds-section"
-      id="embeds"
-    >
-
-      <div class="container">
-
-        <div class="section-heading">
-
-          <div>
-
-            <span class="section-kicker">
-              EMBEDS
-            </span>
-
-            <h2>
-
-              ${escapeHtml(
-                section.title ||
-                "Embedded Tools"
-              )}
-
-            </h2>
-
-          </div>
-
-        </div>
-
-
-        <div
-          class="embeds-grid"
-          style="
-            display:grid;
-            gap:16px;
-          "
-        >
-
-          ${embeds
-            .map(
-              (embed) => {
-
-                const url =
-                  safeUrl(
-                    embed.url
-                  );
-
-
-                const height =
-                  Number(
-                    embed.height
-                  );
-
-
-                const iframeHeight =
-                  Number.isFinite(
-                    height
-                  ) &&
-                  height > 100 &&
-                  height < 2000
-                    ? height
-                    : 420;
-
-
-                return `
-
-                  <article
-                    class="embed-card"
-                    style="
-                      padding:18px;
-                      border:1px solid var(--border);
-                      border-radius:var(--radius-md);
-                      background:var(--surface);
-                    "
-                  >
-
-                    <h3
-                      style="
-                        margin:0 0 12px;
-                        font-size:18px;
-                      "
-                    >
-                      ${escapeHtml(
-                        embed.title ||
-                        "Embedded Content"
-                      )}
-                    </h3>
-
-
-                    <div
-                      style="
-                        overflow:hidden;
-                        border:1px solid var(--border);
-                        border-radius:10px;
-                        background:#fff;
-                      "
-                    >
-
-                      <iframe
-                        src="${escapeHtml(
-                          url
-                        )}"
-                        title="${escapeHtml(
-                          embed.title ||
-                          "Embedded Content"
-                        )}"
-                        loading="lazy"
-                        style="
-                          display:block;
-                          width:100%;
-                          min-height:${iframeHeight}px;
-                          border:0;
-                        "
-                        referrerpolicy="strict-origin-when-cross-origin"
-                      ></iframe>
-
-                    </div>
-
-                  </article>
-
-                `;
-
-              }
-            )
-            .join("")}
-
-        </div>
-
-      </div>
-
-    </section>
-
-  `;
-
-}
-
-
-/* =========================
-   LINKS
-========================= */
-
-function renderLinks(
-  section
-) {
-
-  const links =
-    siteData.links
-      .filter(isEnabled)
-      .filter(
-        (link) =>
-          safeUrl(
-            link.url
-          )
-      );
-
-
-  if (!links.length) {
-    return "";
-  }
-
-
-  return `
-
-    <section
-      class="section links-section"
-      id="links"
-    >
-
-      <div class="container">
-
-        <div class="section-heading">
-
-          <div>
-
-            <span class="section-kicker">
-              LINKS
-            </span>
-
-            <h2>
-
-              ${escapeHtml(
-                section.title ||
-                "Links"
-              )}
-
-            </h2>
-
-          </div>
-
-        </div>
-
-
-        <div
-          style="
-            display:grid;
-            gap:9px;
-          "
-        >
-
-          ${links
-            .map(
-              (link) => {
-
-                const url =
-                  safeUrl(
-                    link.url
-                  );
-
-
-                const target =
-                  link.newTab !== false
-                    ? ' target="_blank" rel="noopener noreferrer"'
-                    : "";
-
-
-                return `
-
-                  <a
-                    href="${escapeHtml(
-                      url
-                    )}"
-                    ${target}
-                    style="
-                      display:flex;
-                      align-items:center;
-                      justify-content:space-between;
-                      gap:12px;
-                      padding:15px 17px;
-                      border:1px solid var(--border);
-                      border-radius:var(--radius-md);
-                      background:var(--surface);
-                      font-weight:700;
-                    "
-                  >
-
-                    <span>
-                      ${escapeHtml(
-                        link.label ||
-                        "Link"
-                      )}
-                    </span>
-
-
-                    <span
-                      style="
-                        color:var(--text-muted);
-                        font-size:12px;
-                      "
-                    >
-                      ↗
-                    </span>
-
-                  </a>
-
-                `;
-
-              }
-            )
-            .join("")}
-
-        </div>
-
-      </div>
-
-    </section>
-
-  `;
-
-}
-
-
-/* =========================
-   GITHUB
-========================= */
-
-function renderGithub(
-  section
-) {
-
-  if (
-    siteData.settings
-      .showGitHubCTA === false
-  ) {
-    return "";
-  }
-
-
-  const github =
-    safeUrl(
-      siteData.site.github
+    updates.find(
+      (update) =>
+        update &&
+        typeof update === "object" &&
+        update.enabled !== false
     );
 
-
-  if (!github) {
-    return "";
+  if (!latest) {
+    return;
   }
 
+  const updateLabel =
+    document.querySelector(
+      ".update-label"
+    );
 
-  return `
+  const updateTitle =
+    document.querySelector(
+      ".update-main h3"
+    );
 
-    <section
-      class="github-section"
-    >
+  const updateDescription =
+    document.querySelector(
+      ".update-main p"
+    );
 
-      <div class="container">
+  const updateDate =
+    document.querySelector(
+      "[data-update-date]"
+    );
 
-        <div class="github-card">
+  const updateVersion =
+    document.querySelector(
+      ".update-version strong"
+    );
 
-          <div>
+  if (updateLabel) {
+    updateLabel.textContent =
+      latest.project ||
+      "Update";
+  }
 
-            <span class="section-kicker">
+  if (updateTitle) {
+    updateTitle.textContent =
+      latest.title ||
+      "";
+  }
 
-              OPEN SOURCE
+  if (updateDescription) {
+    updateDescription.textContent =
+      latest.description ||
+      "";
+  }
 
-            </span>
+  if (updateDate) {
+    updateDate.textContent =
+      latest.date ||
+      "—";
+  }
 
-
-            <h2>
-
-              ${escapeHtml(
-                section.title ||
-                "Open Source"
-              )}
-
-            </h2>
-
-
-            <p>
-
-              制作しているプロジェクトは
-              GitHubで公開しています。
-
-            </p>
-
-          </div>
-
-
-          <a
-            href="${escapeHtml(
-              github
-            )}"
-            target="_blank"
-            rel="noopener noreferrer"
-            class="button button-dark"
-          >
-            Visit GitHub ↗
-          </a>
-
-        </div>
-
-      </div>
-
-    </section>
-
-  `;
-
+  if (updateVersion) {
+    updateVersion.textContent =
+      normalizeVersion(
+        latest.version
+      );
+  }
 }
 
-
 /* =========================
-   TEXT
+   SECTIONS
 ========================= */
 
-function renderText(
-  section
-) {
+function applySections(sections) {
+  if (!Array.isArray(sections)) {
+    return;
+  }
 
-  return `
+  sections.forEach((section) => {
+    if (
+      !section ||
+      typeof section !== "object"
+    ) {
+      return;
+    }
 
-    <section
-      class="section text-section"
-    >
+    /*
+      type によって実ページ上の
+      section を有効/無効化する。
+    */
 
-      <div class="container">
+    const type =
+      String(
+        section.type || ""
+      ).toLowerCase();
 
-        <div class="card">
+    let element = null;
 
-          <div class="section-heading">
+    switch (type) {
+      case "hero":
+        element =
+          document.querySelector(
+            ".hero"
+          );
+        break;
 
-            <div>
+      case "stats":
+        element =
+          document.querySelector(
+            ".stats-section"
+          );
+        break;
 
-              <span class="section-kicker">
-                SECTION
-              </span>
+      case "projects":
+        element =
+          document.querySelector(
+            ".projects-section"
+          );
+        break;
 
-              <h2>
+      case "updates":
+        element =
+          document.querySelector(
+            ".updates-section"
+          );
+        break;
 
-                ${escapeHtml(
-                  section.title ||
-                  ""
-                )}
+      case "github":
+        element =
+          document.querySelector(
+            ".github-section"
+          );
+        break;
 
-              </h2>
+      default:
+        break;
+    }
 
-            </div>
+    if (!element) {
+      return;
+    }
 
-          </div>
-
-
-          <p
-            style="
-              margin:0;
-              color:var(--text-soft);
-              line-height:1.9;
-            "
-          >
-
-            ${escapeHtml(
-              section.description ||
-              ""
-            )}
-
-          </p>
-
-        </div>
-
-      </div>
-
-    </section>
-
-  `;
-
+    element.style.display =
+      section.enabled === false
+        ? "none"
+        : "";
+  });
 }
 
-
 /* =========================
-   FALLBACK
+   SETTINGS
 ========================= */
 
-function renderDefaultHome() {
-
-  return `
-
-    ${renderHero({
-      title:
-        siteData.site.tagline,
-      description:
-        siteData.site.description
-    })}
-
-    ${renderStats()}
-
-    ${renderProjects({
-      title:
-        "Projects"
-    })}
-
-    ${renderUpdates({
-      title:
-        "What's New"
-    })}
-
-    ${renderGithub({
-      title:
-        "Open Source"
-    })}
-
-  `;
-
-}
-
-
-/* =========================
-   FOOTER
-========================= */
-
-function renderFooter() {
+function applySettings(settings) {
+  if (
+    !settings ||
+    typeof settings !== "object" ||
+    Array.isArray(settings)
+  ) {
+    return;
+  }
 
   const footer =
-    document.getElementById(
-      "siteFooter"
-    );
-
-
-  if (!footer) {
-    return;
-  }
-
-
-  if (
-    siteData.settings.showFooter ===
-    false
-  ) {
-
-    footer.style.display =
-      "none";
-
-    return;
-
-  }
-
-
-  footer.style.display =
-    "";
-
-
-  const currentYear =
     document.querySelector(
-      "[data-current-year]"
+      ".site-footer"
     );
 
-
-  if (currentYear) {
-
-    currentYear.textContent =
-      new Date().getFullYear();
-
-  }
-
-
-  const footerLinks =
-    document.getElementById(
-      "footerLinks"
+  const githubSection =
+    document.querySelector(
+      ".github-section"
     );
 
+  const footerText =
+    document.querySelector(
+      ".site-footer .footer-inner > div:first-child"
+    );
 
-  if (!footerLinks) {
-    return;
+  if (footer) {
+    footer.style.display =
+      settings.showFooter === false
+        ? "none"
+        : "";
   }
 
+  if (githubSection) {
+    githubSection.style.display =
+      settings.showGitHubCTA === false
+        ? "none"
+        : "";
+  }
 
-  const links = [
-    {
-      label: "Home",
-      href: "#top"
-    },
-    {
-      label: "Projects",
-      href: "#projects"
-    },
-    {
-      label: "Updates",
-      href: "#updates"
-    }
-  ];
-
+  /*
+    footerText が設定されていても
+    既存のサイト名表示は壊さない。
+  */
 
   if (
-    safeUrl(
-      siteData.site.github
-    )
+    footerText &&
+    typeof settings.footerText === "string" &&
+    settings.footerText.trim()
   ) {
+    const footerName =
+      footerText.querySelector(
+        "[data-site-name]"
+      );
 
-    links.push({
-      label: "GitHub",
-      href:
-        siteData.site.github,
-      newTab: true
-    });
-
+    if (footerName) {
+      /*
+        サイト名は site.name を維持。
+        footerText は今後専用要素を
+        追加したときにも使えるようにしておく。
+      */
+    }
   }
-
-
-  footerLinks.innerHTML =
-    links
-      .map(
-        (link) => {
-
-          const href =
-            safeUrl(
-              link.href
-            );
-
-
-          if (!href) {
-            return "";
-          }
-
-
-          const target =
-            link.newTab
-              ? ' target="_blank" rel="noopener noreferrer"'
-              : "";
-
-
-          return `
-            <a
-              href="${escapeHtml(
-                href
-              )}"
-              ${target}
-            >
-              ${escapeHtml(
-                link.label
-              )}
-            </a>
-          `;
-
-        }
-      )
-      .join("");
-
 }
 
-
 /* =========================
-   META
+   CURRENT YEAR
 ========================= */
 
-function updateMeta() {
-
-  const name =
-    siteData.site.name;
-
-
-  document.title =
-    `${name} - Official Website`;
-
-
-  const meta =
-    document.getElementById(
-      "metaDescription"
-    );
-
-
-  if (meta) {
-
-    meta.setAttribute(
-      "content",
-      siteData.site.description
-    );
-
-  }
-
-
-  document
-    .querySelectorAll(
-      "[data-site-name]"
-    )
-    .forEach(
-      (element) => {
-
-        element.textContent =
-          name;
-
-      }
-    );
-
-
-  document
-    .querySelectorAll(
-      "[data-site-avatar]"
-    )
-    .forEach(
-      (element) => {
-
-        element.src =
-          siteData.site.avatar ||
-          DEFAULT_AVATAR;
-
-
-        element.alt =
-          name;
-
-      }
-    );
-
+function setCurrentYear() {
+  setText(
+    "[data-current-year]",
+    new Date().getFullYear()
+  );
 }
 
-
 /* =========================
-   IMAGE ERROR FALLBACK
+   LINK BEHAVIOR
 ========================= */
 
-document.addEventListener(
-  "error",
-  (event) => {
+function setupSmoothLinks() {
+  const links =
+    document.querySelectorAll(
+      'a[href^="#"]'
+    );
 
-    const target =
-      event.target;
-
+  links.forEach((link) => {
+    /*
+      同じリンクに何度もイベントを
+      付けないためのフラグ。
+    */
 
     if (
-      target instanceof
-        HTMLImageElement &&
-      target.hasAttribute(
-        "data-site-avatar"
-      )
+      link.dataset.smoothBound === "true"
     ) {
-
-      if (
-        target.src !==
-        DEFAULT_AVATAR
-      ) {
-
-        target.src =
-          DEFAULT_AVATAR;
-
-      }
-
+      return;
     }
 
-  },
-  true
-);
+    link.dataset.smoothBound = "true";
 
+    link.addEventListener(
+      "click",
+      (event) => {
+        const targetId =
+          link.getAttribute("href");
+
+        if (
+          !targetId ||
+          targetId === "#"
+        ) {
+          return;
+        }
+
+        const target =
+          document.querySelector(
+            targetId
+          );
+
+        if (!target) {
+          return;
+        }
+
+        event.preventDefault();
+
+        target.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }
+    );
+  });
+}
 
 /* =========================
-   START
+   REVEAL
+========================= */
+
+function setupReveal() {
+  const elements =
+    document.querySelectorAll(
+      ".stat-card, .project-card, .featured-card, .update-card, .github-card"
+    );
+
+  if (
+    !elements.length
+  ) {
+    return;
+  }
+
+  if (
+    !("IntersectionObserver" in window)
+  ) {
+    elements.forEach(
+      (element) => {
+        element.style.opacity = "1";
+        element.style.transform =
+          "translateY(0)";
+      }
+    );
+
+    return;
+  }
+
+  elements.forEach(
+    (element) => {
+      /*
+        すでに初期化済みなら再設定しない。
+      */
+
+      if (
+        element.dataset.revealReady ===
+        "true"
+      ) {
+        return;
+      }
+
+      element.dataset.revealReady =
+        "true";
+
+      element.style.opacity = "0";
+      element.style.transform =
+        "translateY(10px)";
+      element.style.transition =
+        "opacity 0.45s ease, transform 0.45s ease";
+    }
+  );
+
+  const observer =
+    new IntersectionObserver(
+      (entries) => {
+        entries.forEach(
+          (entry) => {
+            if (
+              !entry.isIntersecting
+            ) {
+              return;
+            }
+
+            entry.target.style.opacity =
+              "1";
+
+            entry.target.style.transform =
+              "translateY(0)";
+
+            observer.unobserve(
+              entry.target
+            );
+          }
+        );
+      },
+      {
+        threshold: 0.08
+      }
+    );
+
+  elements.forEach(
+    (element) => {
+      observer.observe(element);
+    }
+  );
+}
+
+/* =========================
+   IMAGE FALLBACK
+========================= */
+
+function setupImageFallback() {
+  const avatars =
+    document.querySelectorAll(
+      "[data-avatar]"
+    );
+
+  avatars.forEach(
+    (avatar) => {
+      if (
+        avatar.dataset.fallbackBound ===
+        "true"
+      ) {
+        return;
+      }
+
+      avatar.dataset.fallbackBound =
+        "true";
+
+      avatar.addEventListener(
+        "error",
+        () => {
+          avatar.removeAttribute(
+            "src"
+          );
+
+          avatar.style.background =
+            "#e8ebef";
+        },
+        {
+          once: true
+        }
+      );
+    }
+  );
+}
+
+/* =========================
+   INIT
 ========================= */
 
 document.addEventListener(
   "DOMContentLoaded",
-  () => {
+  async () => {
+    setCurrentYear();
 
-    loadSiteData();
+    /*
+      先にJSONを読み込み、
+      その後でページ上の要素を
+      アニメーション初期化する。
+    */
 
+    await loadSiteData();
+
+    setupSmoothLinks();
+    setupReveal();
+    setupImageFallback();
   }
 );
