@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#f4f6f8"
+  >
+
+  <title>
+    ホームを編集 - maru_m4ru_maru
+  </title>
+
+  <link
+    rel="stylesheet"
+    href="./editor.css"
+  >
+</head>
+
+<body>
+
+  <!-- ==========================================
+       EDITOR HEADER
+  =========================================== -->
+
+  <header class="editor-header">
+
+    <div class="editor-header-left">
+
+      <button
+        id="backButton"
+        class="icon-button"
+        type="button"
+        aria-label="Adminへ戻る"
+      >
+        ←
+      </button>
+
+      <div class="editor-title">
+
+        <strong>
+          ホームを編集
+        </strong>
+
+        <span>
+          クリックして直接編集
+        </span>
+
+      </div>
+
+    </div>
+
+
+    <div class="editor-header-center">
+
+      <div
+        id="saveStatus"
+        class="save-status"
+      >
+        保存済み
+      </div>
+
+    </div>
+
+
+    <div class="editor-header-right">
+
+      <button
+        id="undoButton"
+        class="toolbar-button"
+        type="button"
+        title="元に戻す"
+        disabled
+      >
+        ↶
+      </button>
+
+      <button
+        id="redoButton"
+        class="toolbar-button"
+        type="button"
+        title="やり直す"
+        disabled
+      >
+        ↷
+      </button>
+
+      <button
+        id="previewButton"
+        class="toolbar-button"
+        type="button"
+      >
+        プレビュー
+      </button>
+
+      <button
+        id="saveButton"
+        class="save-button"
+        type="button"
+      >
+        保存
+      </button>
+
+    </div>
+
+  </header>
+
+
+  <!-- ==========================================
+       EDITOR APP
+  =========================================== -->
+
+  <main
+    id="editorApp"
+    class="editor-app"
+  >
+
+    <!-- PAGE -->
+
+    <section
+      class="page-area"
+      id="pageArea"
+    >
+
+      <div
+        id="websiteFrame"
+        class="website-frame"
+      ></div>
+
+    </section>
+
+
+    <!-- RIGHT PANEL -->
+
+    <aside
+      id="propertyPanel"
+      class="property-panel"
+    >
+
+      <div
+        id="propertyEmpty"
+        class="property-empty"
+      >
+
+        <div class="property-empty-icon">
+          ✦
+        </div>
+
+        <h2>
+          編集する場所を選択
+        </h2>
+
+        <p>
+          ホームページ上の文字やボタン、
+          画像などをクリックしてください。
+        </p>
+
+      </div>
+
+
+      <div
+        id="propertyContent"
+        class="property-content hidden"
+      >
+
+        <div class="property-header">
+
+          <div>
+
+            <span
+              id="propertyType"
+              class="property-kicker"
+            >
+              TEXT
+            </span>
+
+            <h2
+              id="propertyTitle"
+            >
+              要素を編集
+            </h2>
+
+          </div>
+
+          <button
+            id="closePropertyButton"
+            class="close-button"
+            type="button"
+            aria-label="閉じる"
+          >
+            ×
+          </button>
+
+        </div>
+
+
+        <!-- TEXT -->
+
+        <section
+          id="textControls"
+          class="property-section hidden"
+        >
+
+          <label class="control-label">
+            文字
+          </label>
+
+          <textarea
+            id="textValue"
+            class="text-control"
+            rows="4"
+          ></textarea>
+
+
+          <label class="control-label">
+            文字色
+          </label>
+
+          <div class="color-control">
+
+            <input
+              id="textColor"
+              type="color"
+              value="#111318"
+            >
+
+            <input
+              id="textColorText"
+              type="text"
+              value="#111318"
+              spellcheck="false"
+            >
+
+          </div>
+
+
+          <label class="control-label">
+            サイズ
+          </label>
+
+          <div class="range-row">
+
+            <input
+              id="fontSize"
+              type="range"
+              min="10"
+              max="120"
+              value="16"
+            >
+
+            <output
+              id="fontSizeValue"
+            >
+              16px
+            </output>
+
+          </div>
+
+
+          <label class="control-label">
+            太さ
+          </label>
+
+          <div class="segmented-control">
+
+            <button
+              type="button"
+              data-font-weight="400"
+            >
+              通常
+            </button>
+
+            <button
+              type="button"
+              data-font-weight="700"
+            >
+              太字
+            </button>
+
+            <button
+              type="button"
+              data-font-weight="900"
+            >
+              極太
+            </button>
+
+          </div>
+
+        </section>
+
+
+        <!-- COLOR -->
+
+        <section
+          id="colorControls"
+          class="property-section hidden"
+        >
+
+          <label class="control-label">
+            背景色
+          </label>
+
+          <div class="color-control">
+
+            <input
+              id="backgroundColor"
+              type="color"
+              value="#ffffff"
+            >
+
+            <input
+              id="backgroundColorText"
+              type="text"
+              value="#ffffff"
+              spellcheck="false"
+            >
+
+          </div>
+
+        </section>
+
+
+        <!-- LINK -->
+
+        <section
+          id="linkControls"
+          class="property-section hidden"
+        >
+
+          <label class="control-label">
+            リンク先
+          </label>
+
+          <input
+            id="linkValue"
+            class="input-control"
+            type="url"
+            placeholder="https://example.com"
+          >
+
+        </section>
+
+
+        <!-- IMAGE -->
+
+        <section
+          id="imageControls"
+          class="property-section hidden"
+        >
+
+          <label class="control-label">
+            画像URL
+          </label>
+
+          <input
+            id="imageValue"
+            class="input-control"
+            type="url"
+            placeholder="https://..."
+          >
+
+        </section>
+
+
+        <!-- ACTIONS -->
+
+        <div class="property-actions">
+
+          <button
+            id="deleteElementButton"
+            class="danger-button"
+            type="button"
+          >
+            この要素を非表示
+          </button>
+
+        </div>
+
+      </div>
+
+    </aside>
+
+  </main>
+
+
+  <!-- ==========================================
+       FLOATING QUICK TOOLBAR
+  =========================================== -->
+
+  <div
+    id="floatingToolbar"
+    class="floating-toolbar hidden"
+  >
+
+    <button
+      id="editTextQuickButton"
+      type="button"
+    >
+      文字を編集
+    </button>
+
+    <button
+      id="editColorQuickButton"
+      type="button"
+    >
+      色
+    </button>
+
+    <button
+      id="editLinkQuickButton"
+      type="button"
+    >
+      リンク
+    </button>
+
+  </div>
+
+
+  <!-- ==========================================
+       SAVE MODAL
+  =========================================== -->
+
+  <div
+    id="saveModal"
+    class="modal hidden"
+  >
+
+    <div class="modal-backdrop"></div>
+
+    <div class="modal-card">
+
+      <div class="modal-header">
+
+        <div>
+
+          <span class="property-kicker">
+            SAVE
+          </span>
+
+          <h2>
+            変更を保存しますか？
+          </h2>
+
+        </div>
+
+      </div>
+
+
+      <p class="modal-text">
+        保存するとサイトデータがGitHubへ送信され、
+        公開ページにも反映されます。
+      </p>
+
+
+      <div class="modal-actions">
+
+        <button
+          id="cancelSaveButton"
+          class="toolbar-button"
+          type="button"
+        >
+          キャンセル
+        </button>
+
+        <button
+          id="confirmSaveButton"
+          class="save-button"
+          type="button"
+        >
+          保存する
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <script src="./editor.js"></script>
+
+</body>
+
+</html>
