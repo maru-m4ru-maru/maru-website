@@ -1,4 +1,4 @@
-const DATA_URL = "./site-data.json";
+const DATA_URL = "https://raw.githubusercontent.com/maru-m4ru-maru/maru-website/main/site-data.json";
 
 const DEFAULT_AVATAR =
   "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png";
@@ -70,7 +70,10 @@ async function loadSiteData() {
       await fetch(
         `${DATA_URL}?cb=${Date.now()}`,
         {
-          cache: "no-store"
+          cache: "no-store",
+          headers: {
+            Accept: "application/json"
+          }
         }
       );
 
