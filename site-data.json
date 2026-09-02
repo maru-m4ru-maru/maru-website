@@ -81,7 +81,7 @@
       "github": "https://github.com/maru-m4ru-maru/maru-addons",
       "icon": "MA",
       "featured": true,
-      "enabled": true
+      "enabled": false
     },
     {
       "id": "project-mtjk7icb-z0k7z3",
