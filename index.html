@@ -14,45 +14,66 @@
     content=""
   >
 
-  <title>maru_website</title>
+  <meta
+    name="theme-color"
+    content="#f5f7fa"
+  >
 
-  <link rel="stylesheet" href="./style.css">
+  <title>maru_m4ru_maru</title>
+
+  <link
+    rel="stylesheet"
+    href="./style.css"
+  >
 </head>
 
 <body>
 
+  <!-- =========================================================
+       HEADER
+  ========================================================== -->
+
   <header class="site-header">
 
-    <div class="header-inner">
+    <div class="container header-inner">
 
       <a
-        class="site-brand"
         href="#top"
+        class="brand"
       >
 
-        <img
-          id="siteAvatar"
-          class="site-avatar"
-          src=""
-          alt=""
-        >
+        <span class="brand-avatar-wrap">
 
-        <div>
-          <strong id="siteName">
+          <img
+            id="siteAvatar"
+            class="brand-avatar"
+            src=""
+            alt=""
+          >
+
+        </span>
+
+        <span class="brand-copy">
+
+          <strong
+            id="siteName"
+            class="brand-name"
+          >
             maru_m4ru_maru
           </strong>
 
-          <span>
-            maru_website
+          <span class="brand-subtitle">
+            OFFICIAL WEBSITE
           </span>
-        </div>
+
+        </span>
 
       </a>
 
 
       <nav
         id="siteNavigation"
-        class="site-navigation"
+        class="nav"
         aria-label="メインナビゲーション"
       ></nav>
 
@@ -61,37 +82,51 @@
   </header>
 
 
-  <main
-    id="top"
-    class="site-main"
-  >
+  <!-- =========================================================
+       MAIN
+  ========================================================== -->
 
-    <div
-      id="siteSections"
-      class="site-sections"
-    ></div>
+  <main id="top">
+
+    <div id="siteSections"></div>
 
   </main>
 
+
+  <!-- =========================================================
+       FOOTER
+  ========================================================== -->
 
   <footer
     id="siteFooter"
     class="site-footer"
   >
 
-    <div class="footer-inner">
+    <div class="container footer-inner">
 
-      <strong id="footerSiteName">
-        maru_m4ru_maru
-      </strong>
+      <div class="footer-left">
 
-      <span id="footerText">
-        Built by maru_m4ru_maru
-      </span>
+        <strong id="footerSiteName">
+          maru_m4ru_maru
+        </strong>
 
-      <span>
-        © <span id="currentYear"></span>
-      </span>
+        <span
+          id="footerText"
+          class="footer-text"
+        >
+          Built by maru_m4ru_maru
+        </span>
+
+      </div>
+
+
+      <div class="footer-right">
+
+        <span>
+          © <span id="currentYear"></span>
+        </span>
+
+      </div>
 
     </div>
 
