@@ -3,12 +3,17 @@ const DATA_URL = "./site-data.json";
 const DEFAULT_AVATAR =
   "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png";
 
+
+/* =========================================================
+   STATE
+========================================================= */
+
 let siteData = null;
 
 
-/* =========================
-   UTILS
-========================= */
+/* =========================================================
+   HELPERS
+========================================================= */
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -20,33 +25,42 @@ function escapeHtml(value) {
 }
 
 
-function safeString(value) {
-  return typeof value === "string"
-    ? value
-    : "";
-}
+function safeUrl(value) {
 
-
-function isEnabled(item) {
-  return item?.enabled !== false;
-}
-
-
-function safeUrl(url) {
   if (
-    typeof url !== "string" ||
-    !url.trim()
+    typeof value !== "string" ||
+    !value.trim()
   ) {
     return "#";
   }
 
-  return url.trim();
+  return value.trim();
+
 }
 
 
-/* =========================
-   DATA
-========================= */
+function isEnabled(item) {
+
+  return (
+    item &&
+    item.enabled !== false
+  );
+
+}
+
+
+function arrayValue(value) {
+
+  return Array.isArray(value)
+    ? value
+    : [];
+
+}
+
+
+/* =========================================================
+   LOAD DATA
+========================================================= */
 
 async function loadSiteData() {
 
@@ -61,22 +75,46 @@ async function loadSiteData() {
       );
 
     if (!response.ok) {
+
       throw new Error(
-        `HTTP ${response.status}`
+        `site-data.json HTTP ${response.status}`
       );
+
     }
+
 
     const data =
       await response.json();
+
+
+    if (
+      !data ||
+      typeof data !== "object" ||
+      Array.isArray(data)
+    ) {
+
+      throw new Error(
+        "site-data.json が不正です"
+      );
+
+    }
+
 
     siteData = data;
 
     renderSite();
 
+
+    console.log(
+      "[Maru Website] CMS loaded",
+      siteData
+    );
+
+
   } catch (error) {
 
     console.error(
-      "[maru website] data load failed:",
+      "[Maru Website] CMS error",
       error
     );
 
@@ -87,9 +125,9 @@ async function loadSiteData() {
 }
 
 
-/* =========================
-   SITE
-========================= */
+/* =========================================================
+   RENDER SITE
+========================================================= */
 
 function renderSite() {
 
@@ -101,23 +139,27 @@ function renderSite() {
 
 
   /* -------------------------
-     BASIC SITE INFO
+     BASIC
   ------------------------- */
 
   const siteName =
     site.name ||
     "maru_m4ru_maru";
 
-  const avatar =
-    site.avatar ||
-    DEFAULT_AVATAR;
 
   const description =
     site.description ||
     "";
 
+
+  const avatar =
+    site.avatar ||
+    DEFAULT_AVATAR;
+
+
   document.title =
     `${siteName} - Official Website`;
+
 
   document
     .getElementById(
@@ -150,8 +192,10 @@ function renderSite() {
       "siteAvatar"
     );
 
+
   avatarElement.src =
     avatar;
+
 
   avatarElement.alt =
     siteName;
@@ -165,7 +209,7 @@ function renderSite() {
 
 
   /* -------------------------
-     MAIN SECTIONS
+     SECTIONS
   ------------------------- */
 
   renderSections();
@@ -180,20 +224,27 @@ function renderSite() {
       "siteFooter"
     );
 
-  footer.style.display =
+
+  if (
     settings.showFooter === false
-      ? "none"
-      : "";
+  ) {
+
+    footer.hidden = true;
+
+  } else {
+
+    footer.hidden = false;
+
+  }
 
 
-  const footerText =
-    document.getElementById(
+  document
+    .getElementById(
       "footerText"
-    );
-
-  footerText.textContent =
-    settings.footerText ||
-    "Built by maru_m4ru_maru";
+    )
+    .textContent =
+      settings.footerText ||
+      "Built by maru_m4ru_maru";
 
 
   document
@@ -206,74 +257,79 @@ function renderSite() {
 }
 
 
-/* =========================
+/* =========================================================
    NAVIGATION
-========================= */
+========================================================= */
 
 function renderNavigation() {
 
-  const container =
-    document.getElementById(
-      "siteNavigation"
-    );
-
   const navigation =
-    Array.isArray(
+    arrayValue(
       siteData.navigation
-    )
-      ? siteData.navigation
-      : [];
-
-
-  const visible =
-    navigation.filter(
+    ).filter(
       isEnabled
     );
 
 
-  container.innerHTML =
-    visible
-      .map(
-        (item) => {
+  const nav =
+    document.getElementById(
+      "siteNavigation"
+    );
 
-          const label =
-            escapeHtml(
-              item.label ||
-              "Link"
-            );
 
-          const href =
-            escapeHtml(
-              safeUrl(
-                item.href
-              )
-            );
+  nav.innerHTML =
+    navigation
+      .map((item) => {
 
-          const target =
-            item.newTab
-              ? `target="_blank" rel="noopener noreferrer"`
-              : "";
+        const label =
+          escapeHtml(
+            item.label ||
+            "Link"
+          );
 
-          return `
-            <a
-              class="nav-link"
-              href="${href}"
-              ${target}
-            >
+
+        const href =
+          escapeHtml(
+            safeUrl(
+              item.href
+            )
+          );
+
+
+        const target =
+          item.newTab
+            ? `
+              target="_blank"
+              rel="noopener noreferrer"
+            `
+            : "";
+
+
+        return `
+
+          <a
+            class="nav-link"
+            href="${href}"
+            ${target}
+          >
+
+            <span>
               ${label}
-            </a>
-          `;
+            </span>
 
-        }
-      )
+          </a>
+
+        `;
+
+      })
       .join("");
 
 }
 
 
-/* =========================
+/* =========================================================
    SECTIONS
-========================= */
+========================================================= */
 
 function renderSections() {
 
@@ -282,105 +338,126 @@ function renderSections() {
       "siteSections"
     );
 
+
   const sections =
-    Array.isArray(
+    arrayValue(
       siteData.sections
-    )
-      ? siteData.sections
-      : [];
+    ).filter(
+      isEnabled
+    );
 
 
   container.innerHTML = "";
 
 
-  sections
-    .filter(
-      isEnabled
-    )
-    .forEach(
-      (section) => {
+  for (
+    const section of sections
+  ) {
 
-        let html = "";
-
-        switch (
-          section.type
-        ) {
-
-          case "hero":
-            html =
-              renderHero(
-                section
-              );
-            break;
-
-          case "stats":
-            html =
-              renderStats(
-                section
-              );
-            break;
-
-          case "projects":
-            html =
-              renderProjects(
-                section
-              );
-            break;
-
-          case "updates":
-            html =
-              renderUpdates(
-                section
-              );
-            break;
-
-          case "embeds":
-            html =
-              renderEmbeds();
-            break;
-
-          case "links":
-            html =
-              renderLinks();
-            break;
-
-          case "github":
-            html =
-              renderGithub(
-                section
-              );
-            break;
-
-          case "text":
-            html =
-              renderText(
-                section
-              );
-            break;
-
-        }
+    let html = "";
 
 
-        if (html) {
-          container.insertAdjacentHTML(
-            "beforeend",
-            html
+    switch (
+      section.type
+    ) {
+
+      case "hero":
+
+        html =
+          renderHero(
+            section
           );
-        }
 
-      }
-    );
+        break;
+
+
+      case "stats":
+
+        html =
+          renderStats(
+            section
+          );
+
+        break;
+
+
+      case "projects":
+
+        html =
+          renderProjects(
+            section
+          );
+
+        break;
+
+
+      case "updates":
+
+        html =
+          renderUpdates(
+            section
+          );
+
+        break;
+
+
+      case "embeds":
+
+        html =
+          renderEmbeds();
+
+        break;
+
+
+      case "links":
+
+        html =
+          renderLinks();
+
+        break;
+
+
+      case "github":
+
+        html =
+          renderGithub(
+            section
+          );
+
+        break;
+
+
+      case "text":
+
+        html =
+          renderText(
+            section
+          );
+
+        break;
+
+    }
+
+
+    if (html) {
+
+      container.insertAdjacentHTML(
+        "beforeend",
+        html
+      );
+
+    }
+
+  }
 
 }
 
 
-/* =========================
+/* =========================================================
    HERO
-========================= */
+========================================================= */
 
-function renderHero(
-  section
-) {
+function renderHero(section) {
 
   const site =
     siteData.site || {};
@@ -398,50 +475,151 @@ function renderHero(
     "";
 
 
+  const github =
+    safeUrl(
+      site.github
+    );
+
+
   return `
+
     <section
       id="hero"
-      class="section hero-section"
+      class="hero"
     >
 
-      <div class="section-inner">
+      <div class="container">
 
-        <div class="hero-kicker">
-          INDIE DEVELOPER
+        <div class="hero-shell">
+
+          <div class="hero-content">
+
+            <div class="eyebrow">
+              INDIE DEVELOPER
+            </div>
+
+
+            <h1>
+              ${escapeHtml(
+                title
+              )}
+            </h1>
+
+
+            <p class="hero-description">
+              ${escapeHtml(
+                description
+              )}
+            </p>
+
+
+            <div class="hero-actions">
+
+              <a
+                class="button button-dark"
+                href="#projects"
+              >
+                Projects
+                <span>↓</span>
+              </a>
+
+
+              ${
+                github !== "#"
+                  ? `
+
+                    <a
+                      class="button button-light"
+                      href="${escapeHtml(
+                        github
+                      )}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      GitHub
+                      <span>↗</span>
+                    </a>
+
+                  `
+                  : ""
+              }
+
+            </div>
+
+          </div>
+
+
+          <div class="hero-profile">
+
+            <div class="profile-card">
+
+              <div
+                class="profile-glow"
+              ></div>
+
+
+              <img
+                src="${escapeHtml(
+                  site.avatar ||
+                  DEFAULT_AVATAR
+                )}"
+                alt="${escapeHtml(
+                  site.name ||
+                  "maru_m4ru_maru"
+                )}"
+                class="profile-avatar"
+              >
+
+
+              <div
+                class="profile-name"
+              >
+                ${escapeHtml(
+                  site.name ||
+                  "maru_m4ru_maru"
+                )}
+              </div>
+
+
+              <div
+                class="profile-status"
+              >
+
+                <span
+                  class="status-dot"
+                ></span>
+
+                ONLINE
+
+              </div>
+
+            </div>
+
+          </div>
+
         </div>
-
-        <h1>
-          ${escapeHtml(title)}
-        </h1>
-
-        <p>
-          ${escapeHtml(description)}
-        </p>
 
       </div>
 
     </section>
+
   `;
 
 }
 
 
-/* =========================
+/* =========================================================
    STATS
-========================= */
+========================================================= */
 
-function renderStats(
-  section
-) {
+function renderStats(section) {
 
   const stats =
-    Array.isArray(
+    arrayValue(
       siteData.stats
-    )
-      ? siteData.stats.filter(
-          isEnabled
-        )
-      : [];
+    ).filter(
+      isEnabled
+    );
 
 
   if (!stats.length) {
@@ -450,88 +628,107 @@ function renderStats(
 
 
   return `
+
     <section
       id="stats"
-      class="section"
+      class="section section-stats"
     >
 
-      <div class="section-inner">
+      <div class="container">
 
-        <div class="content-block">
+        <div class="section-heading">
 
-          <h2>
-            ${escapeHtml(
-              section.title ||
-              "Quick Stats"
-            )}
-          </h2>
+          <div>
 
-          <div class="stats-grid">
+            <span class="eyebrow muted">
+              OVERVIEW
+            </span>
 
-            ${stats
-              .map(
-                (stat) => `
-                  <div
-                    class="stat-card"
-                  >
-
-                    <span>
-                      ${escapeHtml(
-                        stat.label
-                      )}
-                    </span>
-
-                    <strong>
-                      ${escapeHtml(
-                        stat.value
-                      )}
-                    </strong>
-
-                    ${
-                      stat.meta
-                        ? `
-                          <small>
-                            ${escapeHtml(
-                              stat.meta
-                            )}
-                          </small>
-                        `
-                        : ""
-                    }
-
-                  </div>
-                `
-              )
-              .join("")}
+            <h2>
+              ${escapeHtml(
+                section.title ||
+                "Quick Stats"
+              )}
+            </h2>
 
           </div>
+
+        </div>
+
+
+        <div class="stats-grid">
+
+          ${stats
+            .map(
+              (stat) => `
+
+                <article
+                  class="stat-card"
+                >
+
+                  <span
+                    class="stat-label"
+                  >
+                    ${escapeHtml(
+                      stat.label ||
+                      ""
+                    )}
+                  </span>
+
+
+                  <strong
+                    class="stat-value"
+                  >
+                    ${escapeHtml(
+                      stat.value ||
+                      ""
+                    )}
+                  </strong>
+
+
+                  ${
+                    stat.meta
+                      ? `
+                        <span
+                          class="stat-meta"
+                        >
+                          ${escapeHtml(
+                            stat.meta
+                          )}
+                        </span>
+                      `
+                      : ""
+                  }
+
+                </article>
+
+              `
+            )
+            .join("")}
 
         </div>
 
       </div>
 
     </section>
+
   `;
 
 }
 
 
-/* =========================
+/* =========================================================
    PROJECTS
-========================= */
+========================================================= */
 
-function renderProjects(
-  section
-) {
+function renderProjects(section) {
 
   const projects =
-    Array.isArray(
+    arrayValue(
       siteData.projects
-    )
-      ? siteData.projects.filter(
-          isEnabled
-        )
-      : [];
+    ).filter(
+      isEnabled
+    );
 
 
   if (!projects.length) {
@@ -540,162 +737,242 @@ function renderProjects(
 
 
   return `
+
     <section
       id="projects"
       class="section"
     >
 
-      <div class="section-inner">
+      <div class="container">
 
-        <div class="content-block">
+        <div class="section-heading">
 
-          <h2>
-            ${escapeHtml(
-              section.title ||
-              "Projects"
-            )}
-          </h2>
+          <div>
 
+            <span class="eyebrow muted">
+              WORK
+            </span>
 
-          <div class="projects-list">
-
-            ${projects
-              .map(
-                (project) => {
-
-                  const url =
-                    safeUrl(
-                      project.url
-                    );
-
-                  return `
-                    <article
-                      class="project-card"
-                    >
-
-                      <strong>
-                        ${escapeHtml(
-                          project.title ||
-                          "Project"
-                        )}
-                      </strong>
-
-                      <p>
-                        ${escapeHtml(
-                          project.description ||
-                          ""
-                        )}
-                      </p>
-
-
-                      ${
-                        project.tags?.length
-                          ? `
-                            <div class="tags">
-
-                              ${project.tags
-                                .map(
-                                  (tag) => `
-                                    <span>
-                                      ${escapeHtml(
-                                        tag
-                                      )}
-                                    </span>
-                                  `
-                                )
-                                .join("")}
-
-                            </div>
-                          `
-                          : ""
-                      }
-
-
-                      ${
-                        project.status
-                          ? `
-                            <small class="project-status">
-                              ${escapeHtml(
-                                project.status
-                              )}
-                            </small>
-                          `
-                          : ""
-                      }
-
-
-                      <div class="project-links">
-
-                        ${
-                          url !== "#"
-                            ? `
-                              <a
-                                href="${escapeHtml(
-                                  url
-                                )}"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                Open ↗
-                              </a>
-                            `
-                            : ""
-                        }
-
-
-                        ${
-                          project.github
-                            ? `
-                              <a
-                                href="${escapeHtml(
-                                  project.github
-                                )}"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                GitHub ↗
-                              </a>
-                            `
-                            : ""
-                        }
-
-                      </div>
-
-                    </article>
-                  `;
-
-                }
-              )
-              .join("")}
+            <h2>
+              ${escapeHtml(
+                section.title ||
+                "Projects"
+              )}
+            </h2>
 
           </div>
+
+        </div>
+
+
+        <div class="projects-grid">
+
+          ${projects
+            .map(
+              renderProjectCard
+            )
+            .join("")}
 
         </div>
 
       </div>
 
     </section>
+
   `;
 
 }
 
 
-/* =========================
-   UPDATES
-========================= */
+/* =========================================================
+   PROJECT CARD
+========================================================= */
 
-function renderUpdates(
-  section
+function renderProjectCard(
+  project
 ) {
 
+  const url =
+    safeUrl(
+      project.url
+    );
+
+
+  const github =
+    safeUrl(
+      project.github
+    );
+
+
+  const tags =
+    arrayValue(
+      project.tags
+    );
+
+
+  return `
+
+    <article
+      class="
+        project-card
+        ${
+          project.featured
+            ? "project-featured"
+            : ""
+        }
+      "
+    >
+
+      <div class="project-top">
+
+        <div class="project-icon">
+
+          ${escapeHtml(
+            project.icon ||
+            "PR"
+          )}
+
+        </div>
+
+
+        ${
+          project.status
+            ? `
+              <span
+                class="project-status"
+              >
+                ${escapeHtml(
+                  project.status
+                )}
+              </span>
+            `
+            : ""
+        }
+
+      </div>
+
+
+      <div class="project-body">
+
+        <h3>
+          ${escapeHtml(
+            project.title ||
+            "Untitled Project"
+          )}
+        </h3>
+
+
+        <p>
+          ${escapeHtml(
+            project.description ||
+            ""
+          )}
+        </p>
+
+
+        ${
+          tags.length
+            ? `
+
+              <div
+                class="project-tags"
+              >
+
+                ${tags
+                  .map(
+                    (tag) => `
+                      <span>
+                        ${escapeHtml(
+                          tag
+                        )}
+                      </span>
+                    `
+                  )
+                  .join("")}
+
+              </div>
+
+            `
+            : ""
+        }
+
+      </div>
+
+
+      ${
+        url !== "#" ||
+        github !== "#"
+          ? `
+
+            <div
+              class="project-actions"
+            >
+
+              ${
+                url !== "#"
+                  ? `
+                    <a
+                      href="${escapeHtml(
+                        url
+                      )}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open
+                      <span>↗</span>
+                    </a>
+                  `
+                  : ""
+              }
+
+
+              ${
+                github !== "#"
+                  ? `
+                    <a
+                      href="${escapeHtml(
+                        github
+                      )}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      GitHub
+                      <span>↗</span>
+                    </a>
+                  `
+                  : ""
+              }
+
+            </div>
+
+          `
+          : ""
+      }
+
+    </article>
+
+  `;
+
+}
+
+
+/* =========================================================
+   UPDATES
+========================================================= */
+
+function renderUpdates(section) {
+
   const updates =
-    Array.isArray(
+    arrayValue(
       siteData.updates
     )
-      ? siteData.updates.filter(
-          isEnabled
-        )
-      : [];
+      .filter(
+        isEnabled
+      )
+      .slice(
+        0,
+        8
+      );
 
 
   if (!updates.length) {
@@ -704,43 +981,66 @@ function renderUpdates(
 
 
   return `
+
     <section
       id="updates"
       class="section"
     >
 
-      <div class="section-inner">
+      <div class="container">
 
-        <div class="content-block">
+        <div class="section-heading">
 
-          <h2>
-            ${escapeHtml(
-              section.title ||
-              "What's New"
-            )}
-          </h2>
+          <div>
+
+            <span class="eyebrow muted">
+              CHANGELOG
+            </span>
+
+            <h2>
+              ${escapeHtml(
+                section.title ||
+                "What's New"
+              )}
+            </h2>
+
+          </div>
+
+        </div>
 
 
-          <div class="updates-list">
+        <div
+          class="updates-list"
+        >
 
-            ${updates
-              .map(
-                (update) => `
-                  <article
-                    class="update-card"
+          ${updates
+            .map(
+              (update) => `
+
+                <article
+                  class="update-card"
+                >
+
+                  <div
+                    class="update-date"
                   >
+                    ${escapeHtml(
+                      update.date ||
+                      ""
+                    )}
+                  </div>
 
-                    <strong>
-                      ${escapeHtml(
-                        update.title ||
-                        "Update"
-                      )}
-                    </strong>
+
+                  <div
+                    class="update-content"
+                  >
 
                     ${
                       update.project
                         ? `
-                          <span>
+                          <span
+                            class="update-project"
+                          >
                             ${escapeHtml(
                               update.project
                             )}
@@ -749,81 +1049,70 @@ function renderUpdates(
                         : ""
                     }
 
-                    ${
-                      update.description
-                        ? `
-                          <p>
-                            ${escapeHtml(
-                              update.description
-                            )}
-                          </p>
-                        `
-                        : ""
-                    }
 
-                    <div
-                      class="update-meta"
-                    >
+                    <h3>
+                      ${escapeHtml(
+                        update.title ||
+                        "Update"
+                      )}
+                    </h3>
 
-                      ${
-                        update.version
-                          ? `
-                            <small>
-                              ${escapeHtml(
-                                update.version
-                              )}
-                            </small>
-                          `
-                          : ""
-                      }
 
-                      ${
-                        update.date
-                          ? `
-                            <small>
-                              ${escapeHtml(
-                                update.date
-                              )}
-                            </small>
-                          `
-                          : ""
-                      }
+                    <p>
+                      ${escapeHtml(
+                        update.description ||
+                        ""
+                      )}
+                    </p>
 
-                    </div>
+                  </div>
 
-                  </article>
-                `
-              )
-              .join("")}
 
-          </div>
+                  ${
+                    update.version
+                      ? `
+                        <span
+                          class="update-version"
+                        >
+                          ${escapeHtml(
+                            update.version
+                          )}
+                        </span>
+                      `
+                      : ""
+                  }
+
+                </article>
+
+              `
+            )
+            .join("")}
 
         </div>
 
       </div>
 
     </section>
+
   `;
 
 }
 
 
-/* =========================
+/* =========================================================
    EMBEDS
-========================= */
+========================================================= */
 
 function renderEmbeds() {
 
   const embeds =
-    Array.isArray(
+    arrayValue(
       siteData.embeds
-    )
-      ? siteData.embeds.filter(
-          (item) =>
-            isEnabled(item) &&
-            item.url
-        )
-      : [];
+    ).filter(
+      (embed) =>
+        isEnabled(embed) &&
+        embed.url
+    );
 
 
   if (!embeds.length) {
@@ -832,26 +1121,36 @@ function renderEmbeds() {
 
 
   return `
+
     <section
       class="section"
     >
 
-      <div class="section-inner">
+      <div class="container embed-list">
 
         ${embeds
           .map(
             (embed) => `
-              <div class="content-block">
 
-                <h2>
-                  ${escapeHtml(
-                    embed.title ||
-                    "Embed"
-                  )}
-                </h2>
+              <article
+                class="embed-card"
+              >
+
+                <div
+                  class="embed-header"
+                >
+
+                  <h2>
+                    ${escapeHtml(
+                      embed.title ||
+                      "Embed"
+                    )}
+                  </h2>
+
+                </div>
+
 
                 <iframe
-                  class="embed-frame"
                   src="${escapeHtml(
                     embed.url
                   )}"
@@ -870,7 +1169,8 @@ function renderEmbeds() {
                   )}"
                 ></iframe>
 
-              </div>
+              </article>
+
             `
           )
           .join("")}
@@ -878,25 +1178,24 @@ function renderEmbeds() {
       </div>
 
     </section>
+
   `;
 
 }
 
 
-/* =========================
+/* =========================================================
    LINKS
-========================= */
+========================================================= */
 
 function renderLinks() {
 
   const links =
-    Array.isArray(
+    arrayValue(
       siteData.links
-    )
-      ? siteData.links.filter(
-          isEnabled
-        )
-      : [];
+    ).filter(
+      isEnabled
+    );
 
 
   if (!links.length) {
@@ -905,82 +1204,88 @@ function renderLinks() {
 
 
   return `
-    <section class="section">
 
-      <div class="section-inner">
+    <section
+      class="section"
+    >
 
-        <div class="content-block">
+      <div class="container">
 
-          <h2>
-            Links
-          </h2>
+        <div
+          class="section-heading"
+        >
 
-          <div class="links-list">
+          <div>
 
-            ${links
-              .map(
-                (link) => {
+            <span class="eyebrow muted">
+              LINKS
+            </span>
 
-                  const href =
-                    safeUrl(
-                      link.url
-                    );
-
-                  const target =
-                    link.newTab
-                      ? `target="_blank" rel="noopener noreferrer"`
-                      : "";
-
-                  return `
-                    <a
-                      class="link-card"
-                      href="${escapeHtml(
-                        href
-                      )}"
-                      ${target}
-                    >
-
-                      <strong>
-                        ${escapeHtml(
-                          link.label ||
-                          "Link"
-                        )}
-                      </strong>
-
-                      <span>
-                        ↗
-                      </span>
-
-                    </a>
-                  `;
-
-                }
-              )
-              .join("")}
+            <h2>
+              Links
+            </h2>
 
           </div>
+
+        </div>
+
+
+        <div
+          class="links-grid"
+        >
+
+          ${links
+            .map(
+              (link) => `
+
+                <a
+                  class="link-card"
+                  href="${escapeHtml(
+                    safeUrl(
+                      link.url
+                    )
+                  )}"
+                  ${
+                    link.newTab
+                      ? `target="_blank"
+                         rel="noopener noreferrer"`
+                      : ""
+                  }
+                >
+
+                  <span>
+                    ${escapeHtml(
+                      link.label ||
+                      "Link"
+                    )}
+                  </span>
+
+                  <span>
+                    ↗
+                  </span>
+
+                </a>
+
+              `
+            )
+            .join("")}
 
         </div>
 
       </div>
 
     </section>
+
   `;
 
 }
 
 
-/* =========================
+/* =========================================================
    GITHUB
-========================= */
+========================================================= */
 
-function renderGithub(
-  section
-) {
-
-  const site =
-    siteData.site || {};
-
+function renderGithub(section) {
 
   if (
     siteData.settings?.showGitHubCTA ===
@@ -992,145 +1297,232 @@ function renderGithub(
 
   const github =
     safeUrl(
-      site.github
+      siteData.site?.github
     );
 
 
   return `
+
     <section
       id="github"
-      class="section"
+      class="section github-section"
     >
 
-      <div class="section-inner">
+      <div class="container">
 
-        <div class="content-block">
+        <div
+          class="github-shell"
+        >
 
-          <h2>
-            ${escapeHtml(
-              section.title ||
-              "Open Source"
-            )}
-          </h2>
+          <div>
 
-          <div class="github-card">
+            <span
+              class="eyebrow"
+            >
+              OPEN SOURCE
+            </span>
 
-            <strong>
+
+            <h2>
               ${escapeHtml(
-                github
+                section.title ||
+                "Open Source"
               )}
-            </strong>
+            </h2>
+
 
             <p>
-              公開プロジェクトとソースコード。
+              コードや制作物は
+              GitHub で公開しています。
             </p>
 
-            ${
-              github !== "#"
-                ? `
-                  <a
-                    href="${escapeHtml(
-                      github
-                    )}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    GitHubを見る ↗
-                  </a>
-                `
-                : ""
-            }
-
           </div>
+
+
+          ${
+            github !== "#"
+              ? `
+                <a
+                  class="button button-dark"
+                  href="${escapeHtml(
+                    github
+                  )}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  GitHubを見る
+                  <span>↗</span>
+                </a>
+              `
+              : ""
+          }
 
         </div>
 
       </div>
 
     </section>
+
   `;
 
 }
 
 
-/* =========================
+/* =========================================================
    TEXT
-========================= */
+========================================================= */
 
-function renderText(
-  section
-) {
+function renderText(section) {
 
   return `
-    <section class="section">
 
-      <div class="section-inner">
+    <section
+      class="section"
+    >
 
-        <div class="content-block">
+      <div class="container">
+
+        <article
+          class="text-card"
+        >
+
+          <span
+            class="eyebrow muted"
+          >
+            SECTION
+          </span>
+
 
           <h2>
             ${escapeHtml(
               section.title ||
-              "Text Section"
+              "Text"
             )}
           </h2>
 
-          <p class="text-section">
+
+          <p>
             ${escapeHtml(
               section.description ||
               ""
             )}
           </p>
 
-        </div>
+        </article>
 
       </div>
 
     </section>
+
   `;
 
 }
 
 
-/* =========================
+/* =========================================================
    FALLBACK
-========================= */
+========================================================= */
 
 function renderFallback() {
 
-  const container =
-    document.getElementById(
+  document
+    .getElementById(
       "siteSections"
-    );
+    )
+    .innerHTML = `
 
-  container.innerHTML = `
-    <section class="section">
+      <section class="hero">
 
-      <div class="section-inner">
+        <div class="container">
 
-        <div class="content-block">
+          <div class="hero-shell">
 
-          <h1>
-            maru_m4ru_maru
-          </h1>
+            <div class="hero-content">
 
-          <p>
-            サイトデータを読み込めませんでした。
-          </p>
+              <div class="eyebrow">
+                WEBSITE
+              </div>
+
+              <h1>
+                maru_m4ru_maru
+              </h1>
+
+              <p class="hero-description">
+                サイトデータを読み込めませんでした。
+              </p>
+
+            </div>
+
+          </div>
 
         </div>
 
-      </div>
+      </section>
 
-    </section>
-  `;
+    `;
 
 }
 
 
-/* =========================
+/* =========================================================
+   SMOOTH SCROLL
+========================================================= */
+
+document.addEventListener(
+  "click",
+  (event) => {
+
+    const link =
+      event.target.closest(
+        'a[href^="#"]'
+      );
+
+
+    if (!link) {
+      return;
+    }
+
+
+    const href =
+      link.getAttribute(
+        "href"
+      );
+
+
+    if (
+      !href ||
+      href === "#"
+    ) {
+      return;
+    }
+
+
+    const target =
+      document.querySelector(
+        href
+      );
+
+
+    if (!target) {
+      return;
+    }
+
+
+    event.preventDefault();
+
+
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+  }
+);
+
+
+/* =========================================================
    INIT
-========================= */
+========================================================= */
 
 document.addEventListener(
   "DOMContentLoaded",
