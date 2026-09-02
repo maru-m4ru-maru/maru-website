@@ -77,9 +77,9 @@
       "enabled": true
     },
     {
-      "id": "project-mtjjywxr-a5f1hy",
+      "id": "project-mtjk7icb-z0k7z3",
       "title": "Scratch Project Analyzer",
-      "description": "Scratchのプロジェクトのファイル、JSON、IDを入力するとそのプロジェクトのジャンルを判定し、使われているブロックをランキングにして表示してくれます。",
+      "description": "Scratchのプロジェクトのファイル、JSON、プロジェクトIDを入力すると、そのコードを読み取り、ジャンルと使われているブロックをランキングにして表示します。",
       "status": "ONLINE",
       "tags": [
         "Tools",
