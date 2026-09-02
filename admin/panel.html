@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
 
@@ -8,7 +9,9 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>管理パネル - maru_website</title>
+  <title>
+    管理パネル - maru_website
+  </title>
 
   <link
     rel="stylesheet"
@@ -20,7 +23,10 @@
 
   <div class="app">
 
-    <!-- サイドバー -->
+    <!-- =========================================
+         SIDEBAR
+    ========================================== -->
+
     <aside class="sidebar">
 
       <div class="sidebar-brand">
@@ -30,8 +36,15 @@
         </div>
 
         <div class="brand-text">
-          <strong>maru_website</strong>
-          <span>ADMIN PANEL</span>
+
+          <strong>
+            maru_website
+          </strong>
+
+          <span>
+            ADMIN PANEL
+          </span>
+
         </div>
 
       </div>
@@ -44,8 +57,14 @@
           data-page="overview"
         >
           <span>⌂</span>
-          <b>概要</b>
-          <small>OVERVIEW</small>
+
+          <b>
+            概要
+          </b>
+
+          <small>
+            OVERVIEW
+          </small>
         </button>
 
 
@@ -54,8 +73,14 @@
           data-page="site"
         >
           <span>◉</span>
-          <b>サイト</b>
-          <small>SITE</small>
+
+          <b>
+            サイト
+          </b>
+
+          <small>
+            SITE
+          </small>
         </button>
 
 
@@ -64,8 +89,14 @@
           data-page="pages"
         >
           <span>▣</span>
-          <b>ページ</b>
-          <small>PAGES</small>
+
+          <b>
+            ページ
+          </b>
+
+          <small>
+            PAGES
+          </small>
         </button>
 
 
@@ -74,8 +105,14 @@
           data-page="sections"
         >
           <span>☷</span>
-          <b>セクション</b>
-          <small>SECTIONS</small>
+
+          <b>
+            セクション
+          </b>
+
+          <small>
+            SECTIONS
+          </small>
         </button>
 
 
@@ -84,8 +121,14 @@
           data-page="projects"
         >
           <span>◆</span>
-          <b>プロジェクト</b>
-          <small>PROJECTS</small>
+
+          <b>
+            プロジェクト
+          </b>
+
+          <small>
+            PROJECTS
+          </small>
         </button>
 
 
@@ -94,8 +137,14 @@
           data-page="updates"
         >
           <span>↗</span>
-          <b>更新情報</b>
-          <small>UPDATES</small>
+
+          <b>
+            更新情報
+          </b>
+
+          <small>
+            UPDATES
+          </small>
         </button>
 
 
@@ -104,8 +153,14 @@
           data-page="links"
         >
           <span>↗</span>
-          <b>リンク</b>
-          <small>LINKS</small>
+
+          <b>
+            リンク
+          </b>
+
+          <small>
+            LINKS
+          </small>
         </button>
 
 
@@ -114,8 +169,14 @@
           data-page="embeds"
         >
           <span>▤</span>
-          <b>埋め込み</b>
-          <small>EMBEDS</small>
+
+          <b>
+            埋め込み
+          </b>
+
+          <small>
+            EMBEDS
+          </small>
         </button>
 
 
@@ -124,8 +185,14 @@
           data-page="navigation"
         >
           <span>≡</span>
-          <b>ナビゲーション</b>
-          <small>NAVIGATION</small>
+
+          <b>
+            ナビゲーション
+          </b>
+
+          <small>
+            NAVIGATION
+          </small>
         </button>
 
 
@@ -134,18 +201,38 @@
           data-page="settings"
         >
           <span>⚙</span>
-          <b>サイト設定</b>
-          <small>SETTINGS</small>
+
+          <b>
+            サイト設定
+          </b>
+
+          <small>
+            SETTINGS
+          </small>
         </button>
 
       </nav>
 
 
+      <!-- =====================================
+           SIDEBAR BOTTOM
+      ====================================== -->
+
       <div class="sidebar-bottom">
+
+        <button
+          id="openEditorButton"
+          class="sidebar-small-button"
+          type="button"
+        >
+          ✎ ホームを編集
+        </button>
+
 
         <button
           id="helpButton"
           class="sidebar-small-button"
+          type="button"
         >
           ? 操作説明
         </button>
@@ -154,8 +241,9 @@
         <button
           id="logoutButton"
           class="sidebar-small-button danger"
+          type="button"
         >
-          ↪ ログアウト
+           ログアウト
         </button>
 
       </div>
@@ -163,7 +251,10 @@
     </aside>
 
 
-    <!-- メイン -->
+    <!-- =========================================
+         MAIN
+    ========================================== -->
+
     <main class="main">
 
       <header class="topbar">
@@ -176,6 +267,7 @@
           >
             ADMIN
           </div>
+
 
           <h1 id="pageTitle">
             概要
@@ -197,6 +289,7 @@
           <button
             id="saveButton"
             class="button primary"
+            type="button"
           >
             保存する
           </button>
@@ -206,6 +299,10 @@
       </header>
 
 
+      <!-- =======================================
+           PAGE CONTENT
+      ======================================== -->
+
       <section
         id="pageContent"
         class="page-content"
@@ -214,7 +311,10 @@
     </main>
 
 
-    <!-- プレビュー -->
+    <!-- =========================================
+         PREVIEW
+    ========================================== -->
+
     <aside class="preview">
 
       <div class="preview-header">
@@ -235,6 +335,7 @@
         <button
           id="refreshPreviewButton"
           class="icon-button"
+          type="button"
           title="プレビューを更新"
         >
           ↻
@@ -245,6 +346,8 @@
 
       <div class="preview-window">
 
+        <!-- Browser chrome -->
+
         <div class="preview-browser">
 
           <span></span>
@@ -252,11 +355,13 @@
           <span></span>
 
           <div class="preview-url">
-            maru-m4ru-maru.github.io
+            maru-m4ru-maru.github.io/maru-website
           </div>
 
         </div>
 
+
+        <!-- Preview content -->
 
         <div
           id="previewContent"
@@ -270,13 +375,19 @@
   </div>
 
 
-  <!-- 操作説明 -->
+  <!-- =========================================
+       HELP MODAL
+  ========================================== -->
+
   <div
     id="helpModal"
     class="modal hidden"
   >
 
-    <div class="modal-backdrop"></div>
+    <div
+      class="modal-backdrop"
+    ></div>
+
 
     <div class="modal-card">
 
@@ -288,7 +399,9 @@
             ADMIN GUIDE
           </span>
 
-          <h2>操作説明</h2>
+          <h2>
+            操作説明
+          </h2>
 
         </div>
 
@@ -296,6 +409,8 @@
         <button
           id="closeHelpButton"
           class="icon-button"
+          type="button"
+          aria-label="閉じる"
         >
           ×
         </button>
@@ -304,6 +419,8 @@
 
 
       <div class="help-grid">
+
+        <!-- SITE -->
 
         <div class="help-item">
 
@@ -319,6 +436,8 @@
         </div>
 
 
+        <!-- SECTIONS -->
+
         <div class="help-item">
 
           <strong>
@@ -327,11 +446,14 @@
 
           <p>
             ホームページに表示する
-            セクションを追加・削除・並び替えできます。
+            セクションを追加・削除・
+            並び替えできます。
           </p>
 
         </div>
 
+
+        <!-- PROJECTS -->
 
         <div class="help-item">
 
@@ -340,11 +462,14 @@
           </strong>
 
           <p>
-            プロジェクトカードを自由に追加できます。
+            プロジェクトカードを
+            追加・編集できます。
           </p>
 
         </div>
 
+
+        <!-- UPDATES -->
 
         <div class="help-item">
 
@@ -353,11 +478,14 @@
           </strong>
 
           <p>
-            アップデート情報を追加・編集できます。
+            アップデート情報を
+            追加・編集できます。
           </p>
 
         </div>
 
+
+        <!-- LINKS -->
 
         <div class="help-item">
 
@@ -366,11 +494,14 @@
           </strong>
 
           <p>
-            ボタンやリンクとして使うURLを管理できます。
+            ボタンやリンクとして使う
+            URLを管理できます。
           </p>
 
         </div>
 
+
+        <!-- EMBEDS -->
 
         <div class="help-item">
 
@@ -379,11 +510,14 @@
           </strong>
 
           <p>
-            URLを指定してiframe形式のコンテンツを追加できます。
+            URLを指定してiframe形式の
+            外部コンテンツを追加できます。
           </p>
 
         </div>
 
+
+        <!-- NAVIGATION -->
 
         <div class="help-item">
 
@@ -392,11 +526,14 @@
           </strong>
 
           <p>
-            サイト上部のメニューを変更できます。
+            サイト上部のメニューを
+            管理できます。
           </p>
 
         </div>
 
+
+        <!-- SAVE -->
 
         <div class="help-item">
 
@@ -411,6 +548,23 @@
 
         </div>
 
+
+        <!-- EDITOR -->
+
+        <div class="help-item">
+
+          <strong>
+            ホームを編集
+          </strong>
+
+          <p>
+            公開ページを見ながら、
+            文字・色・リンクなどを
+            直感的に編集できます。
+          </p>
+
+        </div>
+
       </div>
 
     </div>
@@ -418,7 +572,14 @@
   </div>
 
 
-  <script src="./admin.js"></script>
+  <!-- =========================================
+       SCRIPT
+  ========================================== -->
+
+  <script
+    src="./admin.js"
+  ></script>
 
 </body>
+
 </html>
