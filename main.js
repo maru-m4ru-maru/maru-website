@@ -3,33 +3,12 @@ const SITE_DATA_URL = "./site-data.json";
 const DEFAULT_AVATAR =
   "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png";
 
+let currentSiteData = null;
+
+
 /* =========================
-   HELPERS
+   UTILITIES
 ========================= */
-
-function setText(selector, value) {
-  const elements = document.querySelectorAll(selector);
-
-  elements.forEach((element) => {
-    element.textContent =
-      value === undefined || value === null
-        ? ""
-        : String(value);
-  });
-}
-
-function setAttribute(selector, attribute, value) {
-  const elements = document.querySelectorAll(selector);
-
-  elements.forEach((element) => {
-    if (value === undefined || value === null || value === "") {
-      element.removeAttribute(attribute);
-      return;
-    }
-
-    element.setAttribute(attribute, String(value));
-  });
-}
 
 function escapeHtml(value) {
   return String(value ?? "")
@@ -40,47 +19,116 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-function normalizeVersion(version) {
+
+function safeUrl(value) {
+  if (
+    typeof value !== "string" ||
+    !value.trim()
+  ) {
+    return "#";
+  }
+
+  return value.trim();
+}
+
+
+function normalizeVersion(value) {
+  if (
+    value === undefined ||
+    value === null
+  ) {
+    return "";
+  }
+
+  const version =
+    String(value).trim();
+
   if (!version) {
     return "";
   }
 
-  const value = String(version).trim();
+  return version.startsWith("v")
+    ? version
+    : `v${version}`;
+}
 
-  if (!value) {
+
+function formatDate(value) {
+  if (
+    value === undefined ||
+    value === null
+  ) {
     return "";
   }
 
-  return value.startsWith("v")
-    ? value
-    : `v${value}`;
+  return String(value);
 }
+
+
+function enabled(value) {
+  return value?.enabled !== false;
+}
+
+
+function setText(selector, value) {
+  document
+    .querySelectorAll(selector)
+    .forEach((element) => {
+      element.textContent =
+        value ?? "";
+    });
+}
+
+
+function setAttribute(
+  selector,
+  attribute,
+  value
+) {
+  document
+    .querySelectorAll(selector)
+    .forEach((element) => {
+      if (
+        value === undefined ||
+        value === null ||
+        value === ""
+      ) {
+        element.removeAttribute(attribute);
+        return;
+      }
+
+      element.setAttribute(
+        attribute,
+        String(value)
+      );
+    });
+}
+
 
 /* =========================
    SITE DATA
 ========================= */
 
-let currentSiteData = null;
-
 async function loadSiteData() {
-  try {
-    const cacheBuster =
-      `cb=${Date.now()}`;
 
-    const response = await fetch(
-      `${SITE_DATA_URL}?${cacheBuster}`,
-      {
-        cache: "no-store"
-      }
-    );
+  try {
+
+    const response =
+      await fetch(
+        `${SITE_DATA_URL}?v=${Date.now()}`,
+        {
+          cache: "no-store"
+        }
+      );
 
     if (!response.ok) {
       throw new Error(
-        `site-data.json returned ${response.status}`
+        `site-data.json HTTP ${response.status}`
       );
     }
 
-    const data = await response.json();
+    const data =
+      await response.json();
 
     if (
       !data ||
@@ -88,54 +136,82 @@ async function loadSiteData() {
       Array.isArray(data)
     ) {
       throw new Error(
-        "site-data.json is not a valid object"
+        "site-data.json is invalid"
       );
     }
 
     currentSiteData = data;
 
-    applySiteData(data);
+    renderSite(data);
 
     console.log(
-      "[maru-website] site data loaded",
+      "[maru-website] CMS data loaded",
       data
     );
+
   } catch (error) {
-    console.warn(
-      "[maru-website] Failed to load site-data.json",
+
+    console.error(
+      "[maru-website] CMS load failed",
       error
     );
 
-    /*
-      JSONが取得できなくても、
-      index.html に書かれている固定内容を
-      そのまま表示できるようにする。
-    */
+    renderFallback();
+
   }
+
 }
 
+
 /* =========================
-   APPLY SITE DATA
+   MAIN RENDER
 ========================= */
 
-function applySiteData(data) {
+function renderSite(data) {
+
   const site =
     data.site &&
     typeof data.site === "object"
       ? data.site
       : {};
 
-  const siteName =
+  const settings =
+    data.settings &&
+    typeof data.settings === "object"
+      ? data.settings
+      : {};
+
+  applyBasicSiteData(site);
+
+  renderNavigation(
+    data.navigation
+  );
+
+  renderSections(data);
+
+  renderFooter(
+    data.links,
+    settings
+  );
+
+  applySettings(settings);
+
+}
+
+
+/* =========================
+   BASIC SITE
+========================= */
+
+function applyBasicSiteData(site) {
+
+  const name =
     site.name ||
     "maru_m4ru_maru";
 
-  const tagline =
-    site.tagline ||
-    "ScratchやWebを、もっと便利に。";
-
   const description =
     site.description ||
-    "maru_m4ru_maru が制作しているツール・サービス・プロジェクトを紹介しています。";
+    "";
 
   const avatar =
     site.avatar ||
@@ -145,174 +221,99 @@ function applySiteData(data) {
     site.github ||
     "https://github.com/maru-m4ru-maru";
 
-  /* -------------------------
-     SITE BASIC
-  ------------------------- */
+  document.title =
+    `${name} - Official Website`;
 
   setText(
     "[data-site-name]",
-    siteName
-  );
-
-  setText(
-    "[data-description]",
-    description
+    name
   );
 
   setAttribute(
-    "[data-avatar]",
+    "[data-site-avatar]",
     "src",
     avatar
   );
 
   setAttribute(
-    "[data-avatar]",
+    "[data-site-avatar]",
     "alt",
-    siteName
+    name
   );
 
-  document.title =
-    `${siteName} - Official Website`;
-
-  const metaDescription =
+  const meta =
     document.querySelector(
-      'meta[name="description"]'
+      "#metaDescription"
     );
 
-  if (metaDescription) {
-    metaDescription.setAttribute(
+  if (meta) {
+
+    meta.setAttribute(
       "content",
       description
     );
+
   }
 
-  /* -------------------------
-     TAGLINE
-     data-tagline がある場合に反映
-  ------------------------- */
+  document
+    .querySelectorAll(
+      'a[data-site-github]'
+    )
+    .forEach((link) => {
 
-  setText(
-    "[data-tagline]",
-    tagline
-  );
+      link.href =
+        safeUrl(github);
 
-  /* -------------------------
-     GITHUB LINKS
-  ------------------------- */
+    });
 
-  const githubLinks =
-    document.querySelectorAll(
-      'a[href*="github.com/maru-m4ru-maru"]'
-    );
-
-  githubLinks.forEach((link) => {
-    link.href = github;
-
-    if (
-      link.target === "_blank"
-    ) {
-      link.rel =
-        "noopener noreferrer";
-    }
-  });
-
-  /* -------------------------
-     NAVIGATION
-  ------------------------- */
-
-  applyNavigation(
-    data.navigation
-  );
-
-  /* -------------------------
-     STATS
-  ------------------------- */
-
-  applyStats(
-    data.stats
-  );
-
-  /* -------------------------
-     PROJECTS
-  ------------------------- */
-
-  applyProjects(
-    data.projects
-  );
-
-  /* -------------------------
-     FEATURED PROJECT
-  ------------------------- */
-
-  applyFeaturedProject(
-    data.projects
-  );
-
-  /* -------------------------
-     UPDATES
-  ------------------------- */
-
-  applyUpdates(
-    data.updates
-  );
-
-  /* -------------------------
-     SECTIONS
-  ------------------------- */
-
-  applySections(
-    data.sections
-  );
-
-  /* -------------------------
-     SETTINGS
-  ------------------------- */
-
-  applySettings(
-    data.settings
-  );
 }
+
 
 /* =========================
    NAVIGATION
 ========================= */
 
-function applyNavigation(navigation) {
-  if (!Array.isArray(navigation)) {
-    return;
-  }
+function renderNavigation(
+  navigation
+) {
 
-  const nav = document.querySelector(".nav");
+  const nav =
+    document.querySelector(
+      "#siteNavigation"
+    );
 
   if (!nav) {
     return;
   }
 
-  const enabledItems =
-    navigation.filter(
-      (item) =>
-        item &&
-        typeof item === "object" &&
-        item.enabled !== false
-    );
+  if (!Array.isArray(navigation)) {
 
-  /*
-    管理画面で設定したナビゲーションを反映。
-  */
-
-  if (enabledItems.length === 0) {
     nav.innerHTML = "";
+
     return;
   }
 
+  const items =
+    navigation.filter(
+      enabled
+    );
+
   nav.innerHTML =
-    enabledItems
+    items
       .map((item) => {
+
         const label =
-          escapeHtml(item.label || "");
+          escapeHtml(
+            item.label ||
+            "Link"
+          );
 
         const href =
-          escapeHtml(item.href || "#");
+          escapeHtml(
+            safeUrl(
+              item.href
+            )
+          );
 
         const target =
           item.newTab
@@ -321,682 +322,1294 @@ function applyNavigation(navigation) {
 
         return `
           <a
+            class="nav-link"
             href="${href}"
             ${target}
           >
             ${label}
           </a>
         `;
+
       })
       .join("");
 
-  setupSmoothLinks();
 }
 
-/* =========================
-   STATS
-========================= */
-
-function applyStats(stats) {
-  if (!Array.isArray(stats)) {
-    return;
-  }
-
-  const cards =
-    document.querySelectorAll(
-      ".stats-grid .stat-card"
-    );
-
-  if (!cards.length) {
-    return;
-  }
-
-  stats
-    .filter(
-      (item) =>
-        item &&
-        typeof item === "object" &&
-        item.enabled !== false
-    )
-    .slice(0, cards.length)
-    .forEach((item, index) => {
-      const card =
-        cards[index];
-
-      const label =
-        card.querySelector(
-          ".stat-label"
-        );
-
-      const value =
-        card.querySelector(
-          ".stat-value"
-        );
-
-      const meta =
-        card.querySelector(
-          ".stat-meta"
-        );
-
-      if (label) {
-        label.textContent =
-          item.label || "";
-      }
-
-      if (value) {
-        value.textContent =
-          item.value || "";
-      }
-
-      if (meta) {
-        meta.textContent =
-          item.meta || "";
-      }
-    });
-
-  /*
-    もし管理画面で件数を減らした場合、
-    余ったカードを非表示にする。
-  */
-
-  stats
-    .filter(
-      (item) =>
-        item &&
-        typeof item === "object" &&
-        item.enabled !== false
-    )
-    .slice(0, cards.length);
-
-  cards.forEach(
-    (card, index) => {
-      const exists =
-        stats
-          .filter(
-            (item) =>
-              item &&
-              typeof item === "object" &&
-              item.enabled !== false
-          )
-          .slice(0, cards.length)
-          [index];
-
-      card.style.display =
-        exists
-          ? ""
-          : "none";
-    }
-  );
-}
-
-/* =========================
-   PROJECTS
-========================= */
-
-function applyProjects(projects) {
-  if (!Array.isArray(projects)) {
-    return;
-  }
-
-  const grid =
-    document.querySelector(
-      ".projects-grid"
-    );
-
-  if (!grid) {
-    return;
-  }
-
-  const items =
-    projects.filter(
-      (project) =>
-        project &&
-        typeof project === "object" &&
-        project.enabled !== false &&
-        project.featured !== true
-    );
-
-  /*
-    featured=true のプロジェクトは
-    FEATURED PROJECT 側で表示するため
-    Other Projects から除外。
-  */
-
-  if (items.length === 0) {
-    grid.innerHTML = "";
-    return;
-  }
-
-  grid.innerHTML =
-    items
-      .map((project) => {
-        const title =
-          escapeHtml(
-            project.title ||
-            "Untitled Project"
-          );
-
-        const description =
-          escapeHtml(
-            project.description || ""
-          );
-
-        const status =
-          escapeHtml(
-            project.status ||
-            "Unknown"
-          );
-
-        const icon =
-          escapeHtml(
-            project.icon ||
-            "PR"
-          );
-
-        const tags =
-          Array.isArray(project.tags)
-            ? project.tags
-                .slice(0, 10)
-                .map(
-                  (tag) => `
-                    <span>
-                      ${escapeHtml(tag)}
-                    </span>
-                  `
-                )
-                .join("")
-            : "";
-
-        const url =
-          project.url
-            ? escapeHtml(project.url)
-            : "";
-
-        const github =
-          project.github
-            ? escapeHtml(project.github)
-            : "";
-
-        return `
-          <article class="project-card">
-
-            <div class="project-card-top">
-
-              <div class="project-icon">
-                ${icon}
-              </div>
-
-              <span class="project-status">
-                ${status}
-              </span>
-
-            </div>
-
-            <h3>
-              ${title}
-            </h3>
-
-            <p>
-              ${description}
-            </p>
-
-            <div class="project-tags">
-              ${tags}
-            </div>
-
-            ${
-              url || github
-                ? `
-                  <div
-                    style="
-                      display:flex;
-                      gap:10px;
-                      margin-top:18px;
-                      flex-wrap:wrap;
-                    "
-                  >
-
-                    ${
-                      url
-                        ? `
-                          <a
-                            href="${url}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="text-link"
-                          >
-                            Open ↗
-                          </a>
-                        `
-                        : ""
-                    }
-
-                    ${
-                      github
-                        ? `
-                          <a
-                            href="${github}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="text-link"
-                          >
-                            GitHub ↗
-                          </a>
-                        `
-                        : ""
-                    }
-
-                  </div>
-                `
-                : ""
-            }
-
-          </article>
-        `;
-      })
-      .join("");
-}
-
-/* =========================
-   FEATURED PROJECT
-========================= */
-
-function applyFeaturedProject(projects) {
-  if (!Array.isArray(projects)) {
-    return;
-  }
-
-  const featured =
-    projects.find(
-      (project) =>
-        project &&
-        typeof project === "object" &&
-        project.featured === true &&
-        project.enabled !== false
-    );
-
-  if (!featured) {
-    return;
-  }
-
-  const heading =
-    document.querySelector(
-      ".featured-section .section-heading h2"
-    );
-
-  if (heading) {
-    heading.textContent =
-      featured.title ||
-      "Featured Project";
-  }
-
-  const badge =
-    document.querySelector(
-      ".featured-section .project-badge"
-    );
-
-  if (badge) {
-    badge.textContent =
-      featured.status ||
-      "Featured Project";
-  }
-
-  const title =
-    document.querySelector(
-      ".featured-section .featured-content h3"
-    );
-
-  if (title && featured.title) {
-    title.textContent =
-      featured.title;
-  }
-
-  const description =
-    document.querySelector(
-      ".featured-section .featured-content > p"
-    );
-
-  if (
-    description &&
-    featured.description
-  ) {
-    description.textContent =
-      featured.description;
-  }
-
-  const openProject =
-    document.querySelector(
-      ".featured-section .button-primary"
-    );
-
-  if (
-    openProject &&
-    featured.url
-  ) {
-    openProject.href =
-      featured.url;
-  }
-
-  const sourceCode =
-    document.querySelector(
-      ".featured-section .button-ghost"
-    );
-
-  if (
-    sourceCode &&
-    featured.github
-  ) {
-    sourceCode.href =
-      featured.github;
-  }
-}
-
-/* =========================
-   UPDATES
-========================= */
-
-function applyUpdates(updates) {
-  if (!Array.isArray(updates)) {
-    return;
-  }
-
-  const latest =
-    updates.find(
-      (update) =>
-        update &&
-        typeof update === "object" &&
-        update.enabled !== false
-    );
-
-  if (!latest) {
-    return;
-  }
-
-  const updateLabel =
-    document.querySelector(
-      ".update-label"
-    );
-
-  const updateTitle =
-    document.querySelector(
-      ".update-main h3"
-    );
-
-  const updateDescription =
-    document.querySelector(
-      ".update-main p"
-    );
-
-  const updateDate =
-    document.querySelector(
-      "[data-update-date]"
-    );
-
-  const updateVersion =
-    document.querySelector(
-      ".update-version strong"
-    );
-
-  if (updateLabel) {
-    updateLabel.textContent =
-      latest.project ||
-      "Update";
-  }
-
-  if (updateTitle) {
-    updateTitle.textContent =
-      latest.title ||
-      "";
-  }
-
-  if (updateDescription) {
-    updateDescription.textContent =
-      latest.description ||
-      "";
-  }
-
-  if (updateDate) {
-    updateDate.textContent =
-      latest.date ||
-      "—";
-  }
-
-  if (updateVersion) {
-    updateVersion.textContent =
-      normalizeVersion(
-        latest.version
-      );
-  }
-}
 
 /* =========================
    SECTIONS
 ========================= */
 
-function applySections(sections) {
-  if (!Array.isArray(sections)) {
+function renderSections(data) {
+
+  const container =
+    document.querySelector(
+      "#siteSections"
+    );
+
+  if (!container) {
     return;
   }
 
-  sections.forEach((section) => {
-    if (
-      !section ||
-      typeof section !== "object"
-    ) {
-      return;
-    }
+  const sections =
+    Array.isArray(data.sections)
+      ? data.sections
+      : [];
 
-    /*
-      type によって実ページ上の
-      section を有効/無効化する。
-    */
+  if (!sections.length) {
 
-    const type =
-      String(
-        section.type || ""
-      ).toLowerCase();
+    renderFallbackMain();
 
-    let element = null;
+    return;
+  }
 
-    switch (type) {
-      case "hero":
-        element =
-          document.querySelector(
-            ".hero"
-          );
-        break;
+  container.innerHTML = "";
 
-      case "stats":
-        element =
-          document.querySelector(
-            ".stats-section"
-          );
-        break;
+  sections
+    .filter(enabled)
+    .forEach((section) => {
 
-      case "projects":
-        element =
-          document.querySelector(
-            ".projects-section"
-          );
-        break;
+      const type =
+        String(
+          section.type || ""
+        ).toLowerCase();
 
-      case "updates":
-        element =
-          document.querySelector(
-            ".updates-section"
-          );
-        break;
+      let html = "";
 
-      case "github":
-        element =
-          document.querySelector(
-            ".github-section"
-          );
-        break;
+      switch (type) {
 
-      default:
-        break;
-    }
+        case "hero":
 
-    if (!element) {
-      return;
-    }
+          html =
+            renderHero(
+              section,
+              data
+            );
 
-    element.style.display =
-      section.enabled === false
-        ? "none"
-        : "";
-  });
+          break;
+
+
+        case "stats":
+
+          html =
+            renderStats(
+              section,
+              data.stats
+            );
+
+          break;
+
+
+        case "projects":
+
+          html =
+            renderProjects(
+              section,
+              data.projects
+            );
+
+          break;
+
+
+        case "updates":
+
+          html =
+            renderUpdates(
+              section,
+              data.updates
+            );
+
+          break;
+
+
+        case "github":
+
+          html =
+            renderGithub(
+              section,
+              data.site
+            );
+
+          break;
+
+
+        case "embeds":
+
+          html =
+            renderEmbeds(
+              data.embeds
+            );
+
+          break;
+
+
+        case "links":
+
+          html =
+            renderLinks(
+              data.links
+            );
+
+          break;
+
+
+        default:
+
+          html = "";
+
+          break;
+
+      }
+
+      if (html) {
+
+        container.insertAdjacentHTML(
+          "beforeend",
+          html
+        );
+
+      }
+
+    });
+
+
+  if (!container.innerHTML.trim()) {
+
+    renderFallbackMain();
+
+  }
+
 }
+
+
+/* =========================
+   HERO
+========================= */
+
+function renderHero(
+  section,
+  data
+) {
+
+  const site =
+    data.site || {};
+
+  const title =
+    section.title ||
+    "こんにちは！";
+
+  const description =
+    section.description ||
+    site.description ||
+    "";
+
+  const tagline =
+    site.tagline ||
+    "";
+
+  const avatar =
+    site.avatar ||
+    DEFAULT_AVATAR;
+
+  const github =
+    safeUrl(
+      site.github
+    );
+
+  return `
+    <section
+      class="hero-section section"
+      id="hero"
+    >
+
+      <div class="container">
+
+        <div class="hero-card">
+
+          <div class="hero-content">
+
+            <div class="hero-eyebrow">
+              PERSONAL WEBSITE
+            </div>
+
+            <h1 class="hero-title">
+              ${escapeHtml(title)}
+            </h1>
+
+            ${
+              tagline
+                ? `
+                  <p class="hero-tagline">
+                    ${escapeHtml(tagline)}
+                  </p>
+                `
+                : ""
+            }
+
+            <p class="hero-description">
+              ${escapeHtml(description)}
+            </p>
+
+            <div class="hero-actions">
+
+              <a
+                class="button button-primary"
+                href="#projects"
+              >
+                Projects
+              </a>
+
+              <a
+                class="button button-secondary"
+                href="${escapeHtml(github)}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                GitHub ↗
+              </a>
+
+            </div>
+
+          </div>
+
+          <div class="hero-visual">
+
+            <div class="hero-avatar-ring">
+
+              <img
+                src="${escapeHtml(avatar)}"
+                alt="${escapeHtml(
+                  site.name ||
+                  "maru_m4ru_maru"
+                )}"
+                class="hero-avatar"
+              >
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+  `;
+
+}
+
+
+/* =========================
+   STATS
+========================= */
+
+function renderStats(
+  section,
+  stats
+) {
+
+  const items =
+    Array.isArray(stats)
+      ? stats.filter(enabled)
+      : [];
+
+  if (!items.length) {
+    return "";
+  }
+
+  return `
+    <section
+      class="stats-section section"
+      id="stats"
+    >
+
+      <div class="container">
+
+        <div class="section-heading">
+
+          <div>
+
+            <span class="section-kicker">
+              OVERVIEW
+            </span>
+
+            <h2>
+              ${escapeHtml(
+                section.title ||
+                "Quick Stats"
+              )}
+            </h2>
+
+          </div>
+
+        </div>
+
+        <div class="stats-grid">
+
+          ${items
+            .map(
+              (item) => `
+                <article
+                  class="stat-card"
+                >
+
+                  <span
+                    class="stat-label"
+                  >
+                    ${escapeHtml(
+                      item.label ||
+                      ""
+                    )}
+                  </span>
+
+                  <strong
+                    class="stat-value"
+                  >
+                    ${escapeHtml(
+                      item.value ||
+                      ""
+                    )}
+                  </strong>
+
+                  ${
+                    item.meta
+                      ? `
+                        <span
+                          class="stat-meta"
+                        >
+                          ${escapeHtml(
+                            item.meta
+                          )}
+                        </span>
+                      `
+                      : ""
+                  }
+
+                </article>
+              `
+            )
+            .join("")}
+
+        </div>
+
+      </div>
+
+    </section>
+  `;
+
+}
+
+
+/* =========================
+   PROJECTS
+========================= */
+
+function renderProjects(
+  section,
+  projects
+) {
+
+  const items =
+    Array.isArray(projects)
+      ? projects.filter(enabled)
+      : [];
+
+  if (!items.length) {
+    return "";
+  }
+
+  const featured =
+    items.find(
+      (project) =>
+        project.featured === true
+    );
+
+  const normalProjects =
+    items.filter(
+      (project) =>
+        project.featured !== true
+    );
+
+  let html = `
+    <section
+      class="projects-section section"
+      id="projects"
+    >
+
+      <div class="container">
+
+        <div class="section-heading">
+
+          <div>
+
+            <span class="section-kicker">
+              WORK
+            </span>
+
+            <h2>
+              ${escapeHtml(
+                section.title ||
+                "Projects"
+              )}
+            </h2>
+
+          </div>
+
+        </div>
+  `;
+
+
+  if (featured) {
+
+    html += renderFeaturedProject(
+      featured
+    );
+
+  }
+
+
+  if (normalProjects.length) {
+
+    html += `
+      <div
+        class="project-grid"
+      >
+
+        ${normalProjects
+          .map(
+            renderProjectCard
+          )
+          .join("")}
+
+      </div>
+    `;
+
+  }
+
+
+  html += `
+
+      </div>
+
+    </section>
+  `;
+
+  return html;
+
+}
+
+
+/* =========================
+   FEATURED PROJECT
+========================= */
+
+function renderFeaturedProject(
+  project
+) {
+
+  const title =
+    project.title ||
+    "Featured Project";
+
+  const description =
+    project.description ||
+    "";
+
+  const status =
+    project.status ||
+    "";
+
+  const tags =
+    Array.isArray(project.tags)
+      ? project.tags
+      : [];
+
+  const url =
+    safeUrl(
+      project.url
+    );
+
+  const github =
+    safeUrl(
+      project.github
+    );
+
+  const icon =
+    project.icon ||
+    "PR";
+
+  return `
+    <article
+      class="featured-project"
+    >
+
+      <div class="featured-project-visual">
+
+        <div
+          class="project-icon project-icon-large"
+        >
+          ${escapeHtml(icon)}
+        </div>
+
+        <div class="featured-orb"></div>
+
+      </div>
+
+      <div class="featured-project-content">
+
+        <div class="project-badge">
+          ${escapeHtml(
+            status ||
+            "FEATURED"
+          )}
+        </div>
+
+        <h3>
+          ${escapeHtml(title)}
+        </h3>
+
+        <p>
+          ${escapeHtml(description)}
+        </p>
+
+        ${
+          tags.length
+            ? `
+              <div class="project-tags">
+
+                ${tags
+                  .map(
+                    (tag) =>
+                      `
+                        <span>
+                          ${escapeHtml(tag)}
+                        </span>
+                      `
+                  )
+                  .join("")}
+
+              </div>
+            `
+            : ""
+        }
+
+        <div class="project-actions">
+
+          ${
+            url !== "#"
+              ? `
+                <a
+                  class="button button-primary"
+                  href="${escapeHtml(url)}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open Project ↗
+                </a>
+              `
+              : ""
+          }
+
+          ${
+            github !== "#"
+              ? `
+                <a
+                  class="button button-secondary"
+                  href="${escapeHtml(github)}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Source Code ↗
+                </a>
+              `
+              : ""
+          }
+
+        </div>
+
+      </div>
+
+    </article>
+  `;
+
+}
+
+
+/* =========================
+   PROJECT CARD
+========================= */
+
+function renderProjectCard(
+  project
+) {
+
+  const title =
+    project.title ||
+    "Untitled Project";
+
+  const description =
+    project.description ||
+    "";
+
+  const status =
+    project.status ||
+    "";
+
+  const tags =
+    Array.isArray(project.tags)
+      ? project.tags
+      : [];
+
+  const icon =
+    project.icon ||
+    "PR";
+
+  const url =
+    safeUrl(
+      project.url
+    );
+
+  const github =
+    safeUrl(
+      project.github
+    );
+
+  return `
+    <article
+      class="project-card"
+    >
+
+      <div class="project-card-top">
+
+        <div class="project-icon">
+          ${escapeHtml(icon)}
+        </div>
+
+        ${
+          status
+            ? `
+              <span
+                class="project-status"
+              >
+                ${escapeHtml(status)}
+              </span>
+            `
+            : ""
+        }
+
+      </div>
+
+      <h3>
+        ${escapeHtml(title)}
+      </h3>
+
+      <p>
+        ${escapeHtml(description)}
+      </p>
+
+      ${
+        tags.length
+          ? `
+            <div class="project-tags">
+
+              ${tags
+                .map(
+                  (tag) =>
+                    `
+                      <span>
+                        ${escapeHtml(tag)}
+                      </span>
+                    `
+                )
+                .join("")}
+
+            </div>
+          `
+          : ""
+      }
+
+      ${
+        url !== "#" ||
+        github !== "#"
+          ? `
+            <div class="project-links">
+
+              ${
+                url !== "#"
+                  ? `
+                    <a
+                      href="${escapeHtml(url)}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open ↗
+                    </a>
+                  `
+                  : ""
+              }
+
+              ${
+                github !== "#"
+                  ? `
+                    <a
+                      href="${escapeHtml(github)}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      GitHub ↗
+                    </a>
+                  `
+                  : ""
+              }
+
+            </div>
+          `
+          : ""
+      }
+
+    </article>
+  `;
+
+}
+
+
+/* =========================
+   UPDATES
+========================= */
+
+function renderUpdates(
+  section,
+  updates
+) {
+
+  const items =
+    Array.isArray(updates)
+      ? updates.filter(enabled)
+      : [];
+
+  if (!items.length) {
+    return "";
+  }
+
+  return `
+    <section
+      class="updates-section section"
+      id="updates"
+    >
+
+      <div class="container">
+
+        <div class="section-heading">
+
+          <div>
+
+            <span class="section-kicker">
+              CHANGELOG
+            </span>
+
+            <h2>
+              ${escapeHtml(
+                section.title ||
+                "What's New"
+              )}
+            </h2>
+
+          </div>
+
+        </div>
+
+        <div class="updates-list">
+
+          ${items
+            .map(
+              (item) => `
+                <article
+                  class="update-card"
+                >
+
+                  <div class="update-date">
+                    ${escapeHtml(
+                      formatDate(
+                        item.date
+                      )
+                    )}
+                  </div>
+
+                  <div class="update-content">
+
+                    ${
+                      item.project
+                        ? `
+                          <span class="update-project">
+                            ${escapeHtml(
+                              item.project
+                            )}
+                          </span>
+                        `
+                        : ""
+                    }
+
+                    <h3>
+                      ${escapeHtml(
+                        item.title ||
+                        "Update"
+                      )}
+                    </h3>
+
+                    <p>
+                      ${escapeHtml(
+                        item.description ||
+                        ""
+                      )}
+                    </p>
+
+                  </div>
+
+                  ${
+                    item.version
+                      ? `
+                        <div class="update-version">
+                          ${escapeHtml(
+                            normalizeVersion(
+                              item.version
+                            )
+                          )}
+                        </div>
+                      `
+                      : ""
+                  }
+
+                </article>
+              `
+            )
+            .join("")}
+
+        </div>
+
+      </div>
+
+    </section>
+  `;
+
+}
+
+
+/* =========================
+   GITHUB
+========================= */
+
+function renderGithub(
+  section,
+  site
+) {
+
+  const github =
+    safeUrl(
+      site?.github
+    );
+
+  return `
+    <section
+      class="github-section section"
+      id="github"
+    >
+
+      <div class="container">
+
+        <div class="github-card">
+
+          <div>
+
+            <span class="section-kicker">
+              OPEN SOURCE
+            </span>
+
+            <h2>
+              ${escapeHtml(
+                section.title ||
+                "Open Source"
+              )}
+            </h2>
+
+            <p>
+              コードや制作物は
+              GitHub で公開しています。
+            </p>
+
+          </div>
+
+          <a
+            class="button button-primary"
+            href="${escapeHtml(github)}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub を見る ↗
+          </a>
+
+        </div>
+
+      </div>
+
+    </section>
+  `;
+
+}
+
+
+/* =========================
+   EMBEDS
+========================= */
+
+function renderEmbeds(
+  embeds
+) {
+
+  const items =
+    Array.isArray(embeds)
+      ? embeds.filter(enabled)
+      : [];
+
+  if (!items.length) {
+    return "";
+  }
+
+  return `
+    <section
+      class="embeds-section section"
+    >
+
+      <div class="container">
+
+        <div class="embeds-grid">
+
+          ${items
+            .map(
+              (item) => {
+
+                const url =
+                  safeUrl(
+                    item.url
+                  );
+
+                if (url === "#") {
+                  return "";
+                }
+
+                return `
+                  <article
+                    class="embed-card"
+                  >
+
+                    ${
+                      item.title
+                        ? `
+                          <h3>
+                            ${escapeHtml(
+                              item.title
+                            )}
+                          </h3>
+                        `
+                        : ""
+                    }
+
+                    <iframe
+                      src="${escapeHtml(url)}"
+                      title="${escapeHtml(
+                        item.title ||
+                        "Embedded content"
+                      )}"
+                      width="${escapeHtml(
+                        item.width ||
+                        "100%"
+                      )}"
+                      height="${escapeHtml(
+                        item.height ||
+                        "420"
+                      )}"
+                      loading="lazy"
+                      frameborder="0"
+                    ></iframe>
+
+                  </article>
+                `;
+
+              }
+            )
+            .join("")}
+
+        </div>
+
+      </div>
+
+    </section>
+  `;
+
+}
+
+
+/* =========================
+   LINKS
+========================= */
+
+function renderLinks(
+  links
+) {
+
+  const items =
+    Array.isArray(links)
+      ? links.filter(enabled)
+      : [];
+
+  if (!items.length) {
+    return "";
+  }
+
+  return `
+    <section
+      class="links-section section"
+    >
+
+      <div class="container">
+
+        <div class="links-grid">
+
+          ${items
+            .map(
+              (item) => {
+
+                const href =
+                  safeUrl(
+                    item.url
+                  );
+
+                const target =
+                  item.newTab
+                    ? ' target="_blank" rel="noopener noreferrer"'
+                    : "";
+
+                return `
+                  <a
+                    class="link-card"
+                    href="${escapeHtml(href)}"
+                    ${target}
+                  >
+
+                    <span>
+                      ${escapeHtml(
+                        item.label ||
+                        "Link"
+                      )}
+                    </span>
+
+                    <span>
+                      ↗
+                    </span>
+
+                  </a>
+                `;
+
+              }
+            )
+            .join("")}
+
+        </div>
+
+      </div>
+
+    </section>
+  `;
+
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+function renderFooter(
+  links,
+  settings
+) {
+
+  const container =
+    document.querySelector(
+      "#footerLinks"
+    );
+
+  if (!container) {
+    return;
+  }
+
+  const items =
+    Array.isArray(links)
+      ? links.filter(enabled)
+      : [];
+
+  container.innerHTML =
+    items
+      .slice(0, 10)
+      .map(
+        (item) => {
+
+          const href =
+            safeUrl(
+              item.url
+            );
+
+          const target =
+            item.newTab
+              ? ' target="_blank" rel="noopener noreferrer"'
+              : "";
+
+          return `
+            <a
+              href="${escapeHtml(href)}"
+              ${target}
+            >
+              ${escapeHtml(
+                item.label ||
+                "Link"
+              )}
+            </a>
+          `;
+
+        }
+      )
+      .join("");
+
+}
+
 
 /* =========================
    SETTINGS
 ========================= */
 
-function applySettings(settings) {
-  if (
-    !settings ||
-    typeof settings !== "object" ||
-    Array.isArray(settings)
-  ) {
-    return;
-  }
+function applySettings(
+  settings
+) {
 
   const footer =
     document.querySelector(
-      ".site-footer"
-    );
-
-  const githubSection =
-    document.querySelector(
-      ".github-section"
+      "#siteFooter"
     );
 
   const footerText =
-    document.querySelector(
-      ".site-footer .footer-inner > div:first-child"
-    );
+    settings.footerText;
 
-  if (footer) {
-    footer.style.display =
-      settings.showFooter === false
-        ? "none"
-        : "";
-  }
+  if (
+    settings.showFooter === false &&
+    footer
+  ) {
 
-  if (githubSection) {
-    githubSection.style.display =
-      settings.showGitHubCTA === false
-        ? "none"
-        : "";
+    footer.hidden = true;
+
   }
 
   /*
-    footerText が設定されていても
-    既存のサイト名表示は壊さない。
+    footerText は今後専用UIを
+    追加したときに利用できるよう
+    data属性へ渡す。
   */
 
   if (
-    footerText &&
-    typeof settings.footerText === "string" &&
-    settings.footerText.trim()
+    footer &&
+    typeof footerText === "string" &&
+    footerText.trim()
   ) {
-    const footerName =
-      footerText.querySelector(
-        "[data-site-name]"
-      );
 
-    if (footerName) {
-      /*
-        サイト名は site.name を維持。
-        footerText は今後専用要素を
-        追加したときにも使えるようにしておく。
-      */
-    }
+    footer.dataset.footerText =
+      footerText;
+
   }
+
 }
+
 
 /* =========================
    CURRENT YEAR
 ========================= */
 
-function setCurrentYear() {
+function updateYear() {
+
   setText(
     "[data-current-year]",
     new Date().getFullYear()
   );
+
 }
 
+
 /* =========================
-   LINK BEHAVIOR
+   SMOOTH SCROLL
 ========================= */
 
-function setupSmoothLinks() {
-  const links =
-    document.querySelectorAll(
+function setupSmoothScroll() {
+
+  document
+    .querySelectorAll(
       'a[href^="#"]'
-    );
+    )
+    .forEach((link) => {
 
-  links.forEach((link) => {
-    /*
-      同じリンクに何度もイベントを
-      付けないためのフラグ。
-    */
+      link.addEventListener(
+        "click",
+        (event) => {
 
-    if (
-      link.dataset.smoothBound === "true"
-    ) {
-      return;
-    }
+          const href =
+            link.getAttribute(
+              "href"
+            );
 
-    link.dataset.smoothBound = "true";
+          if (
+            !href ||
+            href === "#"
+          ) {
+            return;
+          }
 
-    link.addEventListener(
-      "click",
-      (event) => {
-        const targetId =
-          link.getAttribute("href");
+          const target =
+            document.querySelector(
+              href
+            );
 
-        if (
-          !targetId ||
-          targetId === "#"
-        ) {
-          return;
-        }
+          if (!target) {
+            return;
+          }
 
-        const target =
-          document.querySelector(
-            targetId
+          event.preventDefault();
+
+          target.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+          });
+
+          history.replaceState(
+            null,
+            "",
+            href
           );
 
-        if (!target) {
-          return;
         }
+      );
 
-        event.preventDefault();
+    });
 
-        target.scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
-      }
-    );
-  });
 }
 
+
 /* =========================
-   REVEAL
+   REVEAL ANIMATION
 ========================= */
 
 function setupReveal() {
+
   const elements =
     document.querySelectorAll(
-      ".stat-card, .project-card, .featured-card, .update-card, .github-card"
+      ".stat-card, .project-card, .featured-project, .update-card, .github-card, .hero-card"
     );
 
-  if (
-    !elements.length
-  ) {
+  if (!elements.length) {
     return;
   }
 
@@ -1005,61 +1618,39 @@ function setupReveal() {
   ) {
     elements.forEach(
       (element) => {
-        element.style.opacity = "1";
-        element.style.transform =
-          "translateY(0)";
+        element.classList.add(
+          "is-visible"
+        );
       }
     );
 
     return;
   }
 
-  elements.forEach(
-    (element) => {
-      /*
-        すでに初期化済みなら再設定しない。
-      */
-
-      if (
-        element.dataset.revealReady ===
-        "true"
-      ) {
-        return;
-      }
-
-      element.dataset.revealReady =
-        "true";
-
-      element.style.opacity = "0";
-      element.style.transform =
-        "translateY(10px)";
-      element.style.transition =
-        "opacity 0.45s ease, transform 0.45s ease";
-    }
-  );
-
   const observer =
     new IntersectionObserver(
       (entries) => {
+
         entries.forEach(
           (entry) => {
+
             if (
               !entry.isIntersecting
             ) {
               return;
             }
 
-            entry.target.style.opacity =
-              "1";
-
-            entry.target.style.transform =
-              "translateY(0)";
+            entry.target.classList.add(
+              "is-visible"
+            );
 
             observer.unobserve(
               entry.target
             );
+
           }
         );
+
       },
       {
         threshold: 0.08
@@ -1068,50 +1659,76 @@ function setupReveal() {
 
   elements.forEach(
     (element) => {
-      observer.observe(element);
+
+      element.classList.add(
+        "reveal"
+      );
+
+      observer.observe(
+        element
+      );
+
     }
   );
+
 }
+
 
 /* =========================
-   IMAGE FALLBACK
+   FALLBACK
 ========================= */
 
-function setupImageFallback() {
-  const avatars =
-    document.querySelectorAll(
-      "[data-avatar]"
+function renderFallbackMain() {
+
+  const container =
+    document.querySelector(
+      "#siteSections"
     );
 
-  avatars.forEach(
-    (avatar) => {
-      if (
-        avatar.dataset.fallbackBound ===
-        "true"
-      ) {
-        return;
-      }
+  if (!container) {
+    return;
+  }
 
-      avatar.dataset.fallbackBound =
-        "true";
+  container.innerHTML = `
+    <section class="hero-section section">
+      <div class="container">
+        <div class="hero-card">
+          <div class="hero-content">
 
-      avatar.addEventListener(
-        "error",
-        () => {
-          avatar.removeAttribute(
-            "src"
-          );
+            <div class="hero-eyebrow">
+              PERSONAL WEBSITE
+            </div>
 
-          avatar.style.background =
-            "#e8ebef";
-        },
-        {
-          once: true
-        }
-      );
-    }
-  );
+            <h1 class="hero-title">
+              こんにちは！
+            </h1>
+
+            <p class="hero-description">
+              maru_m4ru_maru が制作している
+              ツール・サービス・プロジェクトを紹介しています。
+            </p>
+
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+
 }
+
+
+function renderFallback() {
+
+  console.warn(
+    "[maru-website] rendering fallback"
+  );
+
+  renderFallbackMain();
+
+  renderNavigation([]);
+
+}
+
 
 /* =========================
    INIT
@@ -1120,18 +1737,14 @@ function setupImageFallback() {
 document.addEventListener(
   "DOMContentLoaded",
   async () => {
-    setCurrentYear();
 
-    /*
-      先にJSONを読み込み、
-      その後でページ上の要素を
-      アニメーション初期化する。
-    */
+    updateYear();
 
     await loadSiteData();
 
-    setupSmoothLinks();
+    setupSmoothScroll();
+
     setupReveal();
-    setupImageFallback();
+
   }
 );
