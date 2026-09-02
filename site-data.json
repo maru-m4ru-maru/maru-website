@@ -111,9 +111,13 @@
     {
       "id": "section-hero",
       "type": "hero",
-      "title": "こんにちは！EDITOR TEST",
+      "title": "こんにちは！",
       "description": "maru_m4ru_maru が制作しているツール・サービス・プロジェクトを紹介しています。",
-      "enabled": true
+      "enabled": true,
+      "titleStyle": {
+        "fontSize": "80px",
+        "color": "#000b42"
+      }
     },
     {
       "id": "section-stats",
