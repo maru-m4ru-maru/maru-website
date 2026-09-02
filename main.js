@@ -1,112 +1,51 @@
-const SITE_DATA_URL = "./site-data.json";
+const DATA_URL = "./site-data.json";
 
 const DEFAULT_AVATAR =
   "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png";
 
-let currentSiteData = null;
+let siteData = null;
 
 
 /* =========================
-   UTILITIES
+   UTILS
 ========================= */
 
 function escapeHtml(value) {
   return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 
-function safeUrl(value) {
+function safeString(value) {
+  return typeof value === "string"
+    ? value
+    : "";
+}
+
+
+function isEnabled(item) {
+  return item?.enabled !== false;
+}
+
+
+function safeUrl(url) {
   if (
-    typeof value !== "string" ||
-    !value.trim()
+    typeof url !== "string" ||
+    !url.trim()
   ) {
     return "#";
   }
 
-  return value.trim();
-}
-
-
-function normalizeVersion(value) {
-  if (
-    value === undefined ||
-    value === null
-  ) {
-    return "";
-  }
-
-  const version =
-    String(value).trim();
-
-  if (!version) {
-    return "";
-  }
-
-  return version.startsWith("v")
-    ? version
-    : `v${version}`;
-}
-
-
-function formatDate(value) {
-  if (
-    value === undefined ||
-    value === null
-  ) {
-    return "";
-  }
-
-  return String(value);
-}
-
-
-function enabled(value) {
-  return value?.enabled !== false;
-}
-
-
-function setText(selector, value) {
-  document
-    .querySelectorAll(selector)
-    .forEach((element) => {
-      element.textContent =
-        value ?? "";
-    });
-}
-
-
-function setAttribute(
-  selector,
-  attribute,
-  value
-) {
-  document
-    .querySelectorAll(selector)
-    .forEach((element) => {
-      if (
-        value === undefined ||
-        value === null ||
-        value === ""
-      ) {
-        element.removeAttribute(attribute);
-        return;
-      }
-
-      element.setAttribute(
-        attribute,
-        String(value)
-      );
-    });
+  return url.trim();
 }
 
 
 /* =========================
-   SITE DATA
+   DATA
 ========================= */
 
 async function loadSiteData() {
@@ -115,7 +54,7 @@ async function loadSiteData() {
 
     const response =
       await fetch(
-        `${SITE_DATA_URL}?v=${Date.now()}`,
+        `${DATA_URL}?cb=${Date.now()}`,
         {
           cache: "no-store"
         }
@@ -123,36 +62,21 @@ async function loadSiteData() {
 
     if (!response.ok) {
       throw new Error(
-        `site-data.json HTTP ${response.status}`
+        `HTTP ${response.status}`
       );
     }
 
     const data =
       await response.json();
 
-    if (
-      !data ||
-      typeof data !== "object" ||
-      Array.isArray(data)
-    ) {
-      throw new Error(
-        "site-data.json is invalid"
-      );
-    }
+    siteData = data;
 
-    currentSiteData = data;
-
-    renderSite(data);
-
-    console.log(
-      "[maru-website] CMS data loaded",
-      data
-    );
+    renderSite();
 
   } catch (error) {
 
     console.error(
-      "[maru-website] CMS load failed",
+      "[maru website] data load failed:",
       error
     );
 
@@ -164,107 +88,120 @@ async function loadSiteData() {
 
 
 /* =========================
-   MAIN RENDER
+   SITE
 ========================= */
 
-function renderSite(data) {
+function renderSite() {
 
   const site =
-    data.site &&
-    typeof data.site === "object"
-      ? data.site
-      : {};
+    siteData.site || {};
 
   const settings =
-    data.settings &&
-    typeof data.settings === "object"
-      ? data.settings
-      : {};
-
-  applyBasicSiteData(site);
-
-  renderNavigation(
-    data.navigation
-  );
-
-  renderSections(data);
-
-  renderFooter(
-    data.links,
-    settings
-  );
-
-  applySettings(settings);
-
-}
+    siteData.settings || {};
 
 
-/* =========================
-   BASIC SITE
-========================= */
+  /* -------------------------
+     BASIC SITE INFO
+  ------------------------- */
 
-function applyBasicSiteData(site) {
-
-  const name =
+  const siteName =
     site.name ||
     "maru_m4ru_maru";
-
-  const description =
-    site.description ||
-    "";
 
   const avatar =
     site.avatar ||
     DEFAULT_AVATAR;
 
-  const github =
-    site.github ||
-    "https://github.com/maru-m4ru-maru";
+  const description =
+    site.description ||
+    "";
 
   document.title =
-    `${name} - Official Website`;
+    `${siteName} - Official Website`;
 
-  setText(
-    "[data-site-name]",
-    name
-  );
-
-  setAttribute(
-    "[data-site-avatar]",
-    "src",
-    avatar
-  );
-
-  setAttribute(
-    "[data-site-avatar]",
-    "alt",
-    name
-  );
-
-  const meta =
-    document.querySelector(
-      "#metaDescription"
-    );
-
-  if (meta) {
-
-    meta.setAttribute(
+  document
+    .getElementById(
+      "metaDescription"
+    )
+    .setAttribute(
       "content",
       description
     );
 
-  }
 
   document
-    .querySelectorAll(
-      'a[data-site-github]'
+    .getElementById(
+      "siteName"
     )
-    .forEach((link) => {
+    .textContent =
+      siteName;
 
-      link.href =
-        safeUrl(github);
 
-    });
+  document
+    .getElementById(
+      "footerSiteName"
+    )
+    .textContent =
+      siteName;
+
+
+  const avatarElement =
+    document.getElementById(
+      "siteAvatar"
+    );
+
+  avatarElement.src =
+    avatar;
+
+  avatarElement.alt =
+    siteName;
+
+
+  /* -------------------------
+     NAVIGATION
+  ------------------------- */
+
+  renderNavigation();
+
+
+  /* -------------------------
+     MAIN SECTIONS
+  ------------------------- */
+
+  renderSections();
+
+
+  /* -------------------------
+     FOOTER
+  ------------------------- */
+
+  const footer =
+    document.getElementById(
+      "siteFooter"
+    );
+
+  footer.style.display =
+    settings.showFooter === false
+      ? "none"
+      : "";
+
+
+  const footerText =
+    document.getElementById(
+      "footerText"
+    );
+
+  footerText.textContent =
+    settings.footerText ||
+    "Built by maru_m4ru_maru";
+
+
+  document
+    .getElementById(
+      "currentYear"
+    )
+    .textContent =
+      new Date().getFullYear();
 
 }
 
@@ -273,64 +210,62 @@ function applyBasicSiteData(site) {
    NAVIGATION
 ========================= */
 
-function renderNavigation(
-  navigation
-) {
+function renderNavigation() {
 
-  const nav =
-    document.querySelector(
-      "#siteNavigation"
+  const container =
+    document.getElementById(
+      "siteNavigation"
     );
 
-  if (!nav) {
-    return;
-  }
+  const navigation =
+    Array.isArray(
+      siteData.navigation
+    )
+      ? siteData.navigation
+      : [];
 
-  if (!Array.isArray(navigation)) {
 
-    nav.innerHTML = "";
-
-    return;
-  }
-
-  const items =
+  const visible =
     navigation.filter(
-      enabled
+      isEnabled
     );
 
-  nav.innerHTML =
-    items
-      .map((item) => {
 
-        const label =
-          escapeHtml(
-            item.label ||
-            "Link"
-          );
+  container.innerHTML =
+    visible
+      .map(
+        (item) => {
 
-        const href =
-          escapeHtml(
-            safeUrl(
-              item.href
-            )
-          );
+          const label =
+            escapeHtml(
+              item.label ||
+              "Link"
+            );
 
-        const target =
-          item.newTab
-            ? ' target="_blank" rel="noopener noreferrer"'
-            : "";
+          const href =
+            escapeHtml(
+              safeUrl(
+                item.href
+              )
+            );
 
-        return `
-          <a
-            class="nav-link"
-            href="${href}"
-            ${target}
-          >
-            ${label}
-          </a>
-        `;
+          const target =
+            item.newTab
+              ? `target="_blank" rel="noopener noreferrer"`
+              : "";
 
-      })
+          return `
+            <a
+              class="nav-link"
+              href="${href}"
+              ${target}
+            >
+              ${label}
+            </a>
+          `;
+
+        }
+      )
       .join("");
 
 }
@@ -340,144 +275,101 @@ function renderNavigation(
    SECTIONS
 ========================= */
 
-function renderSections(data) {
+function renderSections() {
 
   const container =
-    document.querySelector(
-      "#siteSections"
+    document.getElementById(
+      "siteSections"
     );
 
-  if (!container) {
-    return;
-  }
-
   const sections =
-    Array.isArray(data.sections)
-      ? data.sections
+    Array.isArray(
+      siteData.sections
+    )
+      ? siteData.sections
       : [];
 
-  if (!sections.length) {
-
-    renderFallbackMain();
-
-    return;
-  }
 
   container.innerHTML = "";
 
+
   sections
-    .filter(enabled)
-    .forEach((section) => {
+    .filter(
+      isEnabled
+    )
+    .forEach(
+      (section) => {
 
-      const type =
-        String(
-          section.type || ""
-        ).toLowerCase();
+        let html = "";
 
-      let html = "";
+        switch (
+          section.type
+        ) {
 
-      switch (type) {
+          case "hero":
+            html =
+              renderHero(
+                section
+              );
+            break;
 
-        case "hero":
+          case "stats":
+            html =
+              renderStats(
+                section
+              );
+            break;
 
-          html =
-            renderHero(
-              section,
-              data
-            );
+          case "projects":
+            html =
+              renderProjects(
+                section
+              );
+            break;
 
-          break;
+          case "updates":
+            html =
+              renderUpdates(
+                section
+              );
+            break;
 
+          case "embeds":
+            html =
+              renderEmbeds();
+            break;
 
-        case "stats":
+          case "links":
+            html =
+              renderLinks();
+            break;
 
-          html =
-            renderStats(
-              section,
-              data.stats
-            );
+          case "github":
+            html =
+              renderGithub(
+                section
+              );
+            break;
 
-          break;
+          case "text":
+            html =
+              renderText(
+                section
+              );
+            break;
 
-
-        case "projects":
-
-          html =
-            renderProjects(
-              section,
-              data.projects
-            );
-
-          break;
-
-
-        case "updates":
-
-          html =
-            renderUpdates(
-              section,
-              data.updates
-            );
-
-          break;
-
-
-        case "github":
-
-          html =
-            renderGithub(
-              section,
-              data.site
-            );
-
-          break;
-
-
-        case "embeds":
-
-          html =
-            renderEmbeds(
-              data.embeds
-            );
-
-          break;
+        }
 
 
-        case "links":
-
-          html =
-            renderLinks(
-              data.links
-            );
-
-          break;
-
-
-        default:
-
-          html = "";
-
-          break;
+        if (html) {
+          container.insertAdjacentHTML(
+            "beforeend",
+            html
+          );
+        }
 
       }
-
-      if (html) {
-
-        container.insertAdjacentHTML(
-          "beforeend",
-          html
-        );
-
-      }
-
-    });
-
-
-  if (!container.innerHTML.trim()) {
-
-    renderFallbackMain();
-
-  }
+    );
 
 }
 
@@ -487,109 +379,44 @@ function renderSections(data) {
 ========================= */
 
 function renderHero(
-  section,
-  data
+  section
 ) {
 
   const site =
-    data.site || {};
+    siteData.site || {};
+
 
   const title =
     section.title ||
+    site.tagline ||
     "こんにちは！";
+
 
   const description =
     section.description ||
     site.description ||
     "";
 
-  const tagline =
-    site.tagline ||
-    "";
-
-  const avatar =
-    site.avatar ||
-    DEFAULT_AVATAR;
-
-  const github =
-    safeUrl(
-      site.github
-    );
 
   return `
     <section
-      class="hero-section section"
       id="hero"
+      class="section hero-section"
     >
 
-      <div class="container">
+      <div class="section-inner">
 
-        <div class="hero-card">
-
-          <div class="hero-content">
-
-            <div class="hero-eyebrow">
-              PERSONAL WEBSITE
-            </div>
-
-            <h1 class="hero-title">
-              ${escapeHtml(title)}
-            </h1>
-
-            ${
-              tagline
-                ? `
-                  <p class="hero-tagline">
-                    ${escapeHtml(tagline)}
-                  </p>
-                `
-                : ""
-            }
-
-            <p class="hero-description">
-              ${escapeHtml(description)}
-            </p>
-
-            <div class="hero-actions">
-
-              <a
-                class="button button-primary"
-                href="#projects"
-              >
-                Projects
-              </a>
-
-              <a
-                class="button button-secondary"
-                href="${escapeHtml(github)}"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                GitHub ↗
-              </a>
-
-            </div>
-
-          </div>
-
-          <div class="hero-visual">
-
-            <div class="hero-avatar-ring">
-
-              <img
-                src="${escapeHtml(avatar)}"
-                alt="${escapeHtml(
-                  site.name ||
-                  "maru_m4ru_maru"
-                )}"
-                class="hero-avatar"
-              >
-
-            </div>
-
-          </div>
-
+        <div class="hero-kicker">
+          INDIE DEVELOPER
         </div>
+
+        <h1>
+          ${escapeHtml(title)}
+        </h1>
+
+        <p>
+          ${escapeHtml(description)}
+        </p>
 
       </div>
 
@@ -604,91 +431,80 @@ function renderHero(
 ========================= */
 
 function renderStats(
-  section,
-  stats
+  section
 ) {
 
-  const items =
-    Array.isArray(stats)
-      ? stats.filter(enabled)
+  const stats =
+    Array.isArray(
+      siteData.stats
+    )
+      ? siteData.stats.filter(
+          isEnabled
+        )
       : [];
 
-  if (!items.length) {
+
+  if (!stats.length) {
     return "";
   }
 
+
   return `
     <section
-      class="stats-section section"
       id="stats"
+      class="section"
     >
 
-      <div class="container">
+      <div class="section-inner">
 
-        <div class="section-heading">
+        <div class="content-block">
 
-          <div>
+          <h2>
+            ${escapeHtml(
+              section.title ||
+              "Quick Stats"
+            )}
+          </h2>
 
-            <span class="section-kicker">
-              OVERVIEW
-            </span>
+          <div class="stats-grid">
 
-            <h2>
-              ${escapeHtml(
-                section.title ||
-                "Quick Stats"
-              )}
-            </h2>
+            ${stats
+              .map(
+                (stat) => `
+                  <div
+                    class="stat-card"
+                  >
+
+                    <span>
+                      ${escapeHtml(
+                        stat.label
+                      )}
+                    </span>
+
+                    <strong>
+                      ${escapeHtml(
+                        stat.value
+                      )}
+                    </strong>
+
+                    ${
+                      stat.meta
+                        ? `
+                          <small>
+                            ${escapeHtml(
+                              stat.meta
+                            )}
+                          </small>
+                        `
+                        : ""
+                    }
+
+                  </div>
+                `
+              )
+              .join("")}
 
           </div>
-
-        </div>
-
-        <div class="stats-grid">
-
-          ${items
-            .map(
-              (item) => `
-                <article
-                  class="stat-card"
-                >
-
-                  <span
-                    class="stat-label"
-                  >
-                    ${escapeHtml(
-                      item.label ||
-                      ""
-                    )}
-                  </span>
-
-                  <strong
-                    class="stat-value"
-                  >
-                    ${escapeHtml(
-                      item.value ||
-                      ""
-                    )}
-                  </strong>
-
-                  ${
-                    item.meta
-                      ? `
-                        <span
-                          class="stat-meta"
-                        >
-                          ${escapeHtml(
-                            item.meta
-                          )}
-                        </span>
-                      `
-                      : ""
-                  }
-
-                </article>
-              `
-            )
-            .join("")}
 
         </div>
 
@@ -705,369 +521,160 @@ function renderStats(
 ========================= */
 
 function renderProjects(
-  section,
-  projects
+  section
 ) {
 
-  const items =
-    Array.isArray(projects)
-      ? projects.filter(enabled)
+  const projects =
+    Array.isArray(
+      siteData.projects
+    )
+      ? siteData.projects.filter(
+          isEnabled
+        )
       : [];
 
-  if (!items.length) {
+
+  if (!projects.length) {
     return "";
   }
 
-  const featured =
-    items.find(
-      (project) =>
-        project.featured === true
-    );
 
-  const normalProjects =
-    items.filter(
-      (project) =>
-        project.featured !== true
-    );
-
-  let html = `
+  return `
     <section
-      class="projects-section section"
       id="projects"
+      class="section"
     >
 
-      <div class="container">
+      <div class="section-inner">
 
-        <div class="section-heading">
+        <div class="content-block">
 
-          <div>
+          <h2>
+            ${escapeHtml(
+              section.title ||
+              "Projects"
+            )}
+          </h2>
 
-            <span class="section-kicker">
-              WORK
-            </span>
 
-            <h2>
-              ${escapeHtml(
-                section.title ||
-                "Projects"
-              )}
-            </h2>
+          <div class="projects-list">
+
+            ${projects
+              .map(
+                (project) => {
+
+                  const url =
+                    safeUrl(
+                      project.url
+                    );
+
+                  return `
+                    <article
+                      class="project-card"
+                    >
+
+                      <strong>
+                        ${escapeHtml(
+                          project.title ||
+                          "Project"
+                        )}
+                      </strong>
+
+                      <p>
+                        ${escapeHtml(
+                          project.description ||
+                          ""
+                        )}
+                      </p>
+
+
+                      ${
+                        project.tags?.length
+                          ? `
+                            <div class="tags">
+
+                              ${project.tags
+                                .map(
+                                  (tag) => `
+                                    <span>
+                                      ${escapeHtml(
+                                        tag
+                                      )}
+                                    </span>
+                                  `
+                                )
+                                .join("")}
+
+                            </div>
+                          `
+                          : ""
+                      }
+
+
+                      ${
+                        project.status
+                          ? `
+                            <small class="project-status">
+                              ${escapeHtml(
+                                project.status
+                              )}
+                            </small>
+                          `
+                          : ""
+                      }
+
+
+                      <div class="project-links">
+
+                        ${
+                          url !== "#"
+                            ? `
+                              <a
+                                href="${escapeHtml(
+                                  url
+                                )}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Open ↗
+                              </a>
+                            `
+                            : ""
+                        }
+
+
+                        ${
+                          project.github
+                            ? `
+                              <a
+                                href="${escapeHtml(
+                                  project.github
+                                )}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                GitHub ↗
+                              </a>
+                            `
+                            : ""
+                        }
+
+                      </div>
+
+                    </article>
+                  `;
+
+                }
+              )
+              .join("")}
 
           </div>
 
         </div>
-  `;
-
-
-  if (featured) {
-
-    html += renderFeaturedProject(
-      featured
-    );
-
-  }
-
-
-  if (normalProjects.length) {
-
-    html += `
-      <div
-        class="project-grid"
-      >
-
-        ${normalProjects
-          .map(
-            renderProjectCard
-          )
-          .join("")}
-
-      </div>
-    `;
-
-  }
-
-
-  html += `
 
       </div>
 
     </section>
-  `;
-
-  return html;
-
-}
-
-
-/* =========================
-   FEATURED PROJECT
-========================= */
-
-function renderFeaturedProject(
-  project
-) {
-
-  const title =
-    project.title ||
-    "Featured Project";
-
-  const description =
-    project.description ||
-    "";
-
-  const status =
-    project.status ||
-    "";
-
-  const tags =
-    Array.isArray(project.tags)
-      ? project.tags
-      : [];
-
-  const url =
-    safeUrl(
-      project.url
-    );
-
-  const github =
-    safeUrl(
-      project.github
-    );
-
-  const icon =
-    project.icon ||
-    "PR";
-
-  return `
-    <article
-      class="featured-project"
-    >
-
-      <div class="featured-project-visual">
-
-        <div
-          class="project-icon project-icon-large"
-        >
-          ${escapeHtml(icon)}
-        </div>
-
-        <div class="featured-orb"></div>
-
-      </div>
-
-      <div class="featured-project-content">
-
-        <div class="project-badge">
-          ${escapeHtml(
-            status ||
-            "FEATURED"
-          )}
-        </div>
-
-        <h3>
-          ${escapeHtml(title)}
-        </h3>
-
-        <p>
-          ${escapeHtml(description)}
-        </p>
-
-        ${
-          tags.length
-            ? `
-              <div class="project-tags">
-
-                ${tags
-                  .map(
-                    (tag) =>
-                      `
-                        <span>
-                          ${escapeHtml(tag)}
-                        </span>
-                      `
-                  )
-                  .join("")}
-
-              </div>
-            `
-            : ""
-        }
-
-        <div class="project-actions">
-
-          ${
-            url !== "#"
-              ? `
-                <a
-                  class="button button-primary"
-                  href="${escapeHtml(url)}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Open Project ↗
-                </a>
-              `
-              : ""
-          }
-
-          ${
-            github !== "#"
-              ? `
-                <a
-                  class="button button-secondary"
-                  href="${escapeHtml(github)}"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Source Code ↗
-                </a>
-              `
-              : ""
-          }
-
-        </div>
-
-      </div>
-
-    </article>
-  `;
-
-}
-
-
-/* =========================
-   PROJECT CARD
-========================= */
-
-function renderProjectCard(
-  project
-) {
-
-  const title =
-    project.title ||
-    "Untitled Project";
-
-  const description =
-    project.description ||
-    "";
-
-  const status =
-    project.status ||
-    "";
-
-  const tags =
-    Array.isArray(project.tags)
-      ? project.tags
-      : [];
-
-  const icon =
-    project.icon ||
-    "PR";
-
-  const url =
-    safeUrl(
-      project.url
-    );
-
-  const github =
-    safeUrl(
-      project.github
-    );
-
-  return `
-    <article
-      class="project-card"
-    >
-
-      <div class="project-card-top">
-
-        <div class="project-icon">
-          ${escapeHtml(icon)}
-        </div>
-
-        ${
-          status
-            ? `
-              <span
-                class="project-status"
-              >
-                ${escapeHtml(status)}
-              </span>
-            `
-            : ""
-        }
-
-      </div>
-
-      <h3>
-        ${escapeHtml(title)}
-      </h3>
-
-      <p>
-        ${escapeHtml(description)}
-      </p>
-
-      ${
-        tags.length
-          ? `
-            <div class="project-tags">
-
-              ${tags
-                .map(
-                  (tag) =>
-                    `
-                      <span>
-                        ${escapeHtml(tag)}
-                      </span>
-                    `
-                )
-                .join("")}
-
-            </div>
-          `
-          : ""
-      }
-
-      ${
-        url !== "#" ||
-        github !== "#"
-          ? `
-            <div class="project-links">
-
-              ${
-                url !== "#"
-                  ? `
-                    <a
-                      href="${escapeHtml(url)}"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Open ↗
-                    </a>
-                  `
-                  : ""
-              }
-
-              ${
-                github !== "#"
-                  ? `
-                    <a
-                      href="${escapeHtml(github)}"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      GitHub ↗
-                    </a>
-                  `
-                  : ""
-              }
-
-            </div>
-          `
-          : ""
-      }
-
-    </article>
   `;
 
 }
@@ -1078,111 +685,280 @@ function renderProjectCard(
 ========================= */
 
 function renderUpdates(
-  section,
-  updates
+  section
 ) {
 
-  const items =
-    Array.isArray(updates)
-      ? updates.filter(enabled)
+  const updates =
+    Array.isArray(
+      siteData.updates
+    )
+      ? siteData.updates.filter(
+          isEnabled
+        )
       : [];
 
-  if (!items.length) {
+
+  if (!updates.length) {
     return "";
   }
 
+
   return `
     <section
-      class="updates-section section"
       id="updates"
+      class="section"
     >
 
-      <div class="container">
+      <div class="section-inner">
 
-        <div class="section-heading">
+        <div class="content-block">
 
-          <div>
+          <h2>
+            ${escapeHtml(
+              section.title ||
+              "What's New"
+            )}
+          </h2>
 
-            <span class="section-kicker">
-              CHANGELOG
-            </span>
 
-            <h2>
-              ${escapeHtml(
-                section.title ||
-                "What's New"
-              )}
-            </h2>
+          <div class="updates-list">
 
-          </div>
+            ${updates
+              .map(
+                (update) => `
+                  <article
+                    class="update-card"
+                  >
 
-        </div>
-
-        <div class="updates-list">
-
-          ${items
-            .map(
-              (item) => `
-                <article
-                  class="update-card"
-                >
-
-                  <div class="update-date">
-                    ${escapeHtml(
-                      formatDate(
-                        item.date
-                      )
-                    )}
-                  </div>
-
-                  <div class="update-content">
+                    <strong>
+                      ${escapeHtml(
+                        update.title ||
+                        "Update"
+                      )}
+                    </strong>
 
                     ${
-                      item.project
+                      update.project
                         ? `
-                          <span class="update-project">
+                          <span>
                             ${escapeHtml(
-                              item.project
+                              update.project
                             )}
                           </span>
                         `
                         : ""
                     }
 
-                    <h3>
-                      ${escapeHtml(
-                        item.title ||
-                        "Update"
-                      )}
-                    </h3>
+                    ${
+                      update.description
+                        ? `
+                          <p>
+                            ${escapeHtml(
+                              update.description
+                            )}
+                          </p>
+                        `
+                        : ""
+                    }
 
-                    <p>
-                      ${escapeHtml(
-                        item.description ||
-                        ""
-                      )}
-                    </p>
+                    <div
+                      class="update-meta"
+                    >
 
-                  </div>
+                      ${
+                        update.version
+                          ? `
+                            <small>
+                              ${escapeHtml(
+                                update.version
+                              )}
+                            </small>
+                          `
+                          : ""
+                      }
 
-                  ${
-                    item.version
-                      ? `
-                        <div class="update-version">
-                          ${escapeHtml(
-                            normalizeVersion(
-                              item.version
-                            )
-                          )}
-                        </div>
-                      `
-                      : ""
-                  }
+                      ${
+                        update.date
+                          ? `
+                            <small>
+                              ${escapeHtml(
+                                update.date
+                              )}
+                            </small>
+                          `
+                          : ""
+                      }
 
-                </article>
-              `
-            )
-            .join("")}
+                    </div>
+
+                  </article>
+                `
+              )
+              .join("")}
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+  `;
+
+}
+
+
+/* =========================
+   EMBEDS
+========================= */
+
+function renderEmbeds() {
+
+  const embeds =
+    Array.isArray(
+      siteData.embeds
+    )
+      ? siteData.embeds.filter(
+          (item) =>
+            isEnabled(item) &&
+            item.url
+        )
+      : [];
+
+
+  if (!embeds.length) {
+    return "";
+  }
+
+
+  return `
+    <section
+      class="section"
+    >
+
+      <div class="section-inner">
+
+        ${embeds
+          .map(
+            (embed) => `
+              <div class="content-block">
+
+                <h2>
+                  ${escapeHtml(
+                    embed.title ||
+                    "Embed"
+                  )}
+                </h2>
+
+                <iframe
+                  class="embed-frame"
+                  src="${escapeHtml(
+                    embed.url
+                  )}"
+                  width="${escapeHtml(
+                    embed.width ||
+                    "100%"
+                  )}"
+                  height="${escapeHtml(
+                    embed.height ||
+                    "420"
+                  )}"
+                  loading="lazy"
+                  title="${escapeHtml(
+                    embed.title ||
+                    "Embedded content"
+                  )}"
+                ></iframe>
+
+              </div>
+            `
+          )
+          .join("")}
+
+      </div>
+
+    </section>
+  `;
+
+}
+
+
+/* =========================
+   LINKS
+========================= */
+
+function renderLinks() {
+
+  const links =
+    Array.isArray(
+      siteData.links
+    )
+      ? siteData.links.filter(
+          isEnabled
+        )
+      : [];
+
+
+  if (!links.length) {
+    return "";
+  }
+
+
+  return `
+    <section class="section">
+
+      <div class="section-inner">
+
+        <div class="content-block">
+
+          <h2>
+            Links
+          </h2>
+
+          <div class="links-list">
+
+            ${links
+              .map(
+                (link) => {
+
+                  const href =
+                    safeUrl(
+                      link.url
+                    );
+
+                  const target =
+                    link.newTab
+                      ? `target="_blank" rel="noopener noreferrer"`
+                      : "";
+
+                  return `
+                    <a
+                      class="link-card"
+                      href="${escapeHtml(
+                        href
+                      )}"
+                      ${target}
+                    >
+
+                      <strong>
+                        ${escapeHtml(
+                          link.label ||
+                          "Link"
+                        )}
+                      </strong>
+
+                      <span>
+                        ↗
+                      </span>
+
+                    </a>
+                  `;
+
+                }
+              )
+              .join("")}
+
+          </div>
 
         </div>
 
@@ -1199,54 +975,74 @@ function renderUpdates(
 ========================= */
 
 function renderGithub(
-  section,
-  site
+  section
 ) {
+
+  const site =
+    siteData.site || {};
+
+
+  if (
+    siteData.settings?.showGitHubCTA ===
+    false
+  ) {
+    return "";
+  }
+
 
   const github =
     safeUrl(
-      site?.github
+      site.github
     );
+
 
   return `
     <section
-      class="github-section section"
       id="github"
+      class="section"
     >
 
-      <div class="container">
+      <div class="section-inner">
 
-        <div class="github-card">
+        <div class="content-block">
 
-          <div>
+          <h2>
+            ${escapeHtml(
+              section.title ||
+              "Open Source"
+            )}
+          </h2>
 
-            <span class="section-kicker">
-              OPEN SOURCE
-            </span>
+          <div class="github-card">
 
-            <h2>
+            <strong>
               ${escapeHtml(
-                section.title ||
-                "Open Source"
+                github
               )}
-            </h2>
+            </strong>
 
             <p>
-              コードや制作物は
-              GitHub で公開しています。
+              公開プロジェクトとソースコード。
             </p>
+
+            ${
+              github !== "#"
+                ? `
+                  <a
+                    href="${escapeHtml(
+                      github
+                    )}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    GitHubを見る ↗
+                  </a>
+                `
+                : ""
+            }
 
           </div>
 
-          <a
-            class="button button-primary"
-            href="${escapeHtml(github)}"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            GitHub を見る ↗
-          </a>
-
         </div>
 
       </div>
@@ -1258,85 +1054,33 @@ function renderGithub(
 
 
 /* =========================
-   EMBEDS
+   TEXT
 ========================= */
 
-function renderEmbeds(
-  embeds
+function renderText(
+  section
 ) {
-
-  const items =
-    Array.isArray(embeds)
-      ? embeds.filter(enabled)
-      : [];
-
-  if (!items.length) {
-    return "";
-  }
 
   return `
-    <section
-      class="embeds-section section"
-    >
+    <section class="section">
 
-      <div class="container">
+      <div class="section-inner">
 
-        <div class="embeds-grid">
+        <div class="content-block">
 
-          ${items
-            .map(
-              (item) => {
+          <h2>
+            ${escapeHtml(
+              section.title ||
+              "Text Section"
+            )}
+          </h2>
 
-                const url =
-                  safeUrl(
-                    item.url
-                  );
-
-                if (url === "#") {
-                  return "";
-                }
-
-                return `
-                  <article
-                    class="embed-card"
-                  >
-
-                    ${
-                      item.title
-                        ? `
-                          <h3>
-                            ${escapeHtml(
-                              item.title
-                            )}
-                          </h3>
-                        `
-                        : ""
-                    }
-
-                    <iframe
-                      src="${escapeHtml(url)}"
-                      title="${escapeHtml(
-                        item.title ||
-                        "Embedded content"
-                      )}"
-                      width="${escapeHtml(
-                        item.width ||
-                        "100%"
-                      )}"
-                      height="${escapeHtml(
-                        item.height ||
-                        "420"
-                      )}"
-                      loading="lazy"
-                      frameborder="0"
-                    ></iframe>
-
-                  </article>
-                `;
-
-              }
-            )
-            .join("")}
+          <p class="text-section">
+            ${escapeHtml(
+              section.description ||
+              ""
+            )}
+          </p>
 
         </div>
 
@@ -1344,332 +1088,6 @@ function renderEmbeds(
 
     </section>
   `;
-
-}
-
-
-/* =========================
-   LINKS
-========================= */
-
-function renderLinks(
-  links
-) {
-
-  const items =
-    Array.isArray(links)
-      ? links.filter(enabled)
-      : [];
-
-  if (!items.length) {
-    return "";
-  }
-
-  return `
-    <section
-      class="links-section section"
-    >
-
-      <div class="container">
-
-        <div class="links-grid">
-
-          ${items
-            .map(
-              (item) => {
-
-                const href =
-                  safeUrl(
-                    item.url
-                  );
-
-                const target =
-                  item.newTab
-                    ? ' target="_blank" rel="noopener noreferrer"'
-                    : "";
-
-                return `
-                  <a
-                    class="link-card"
-                    href="${escapeHtml(href)}"
-                    ${target}
-                  >
-
-                    <span>
-                      ${escapeHtml(
-                        item.label ||
-                        "Link"
-                      )}
-                    </span>
-
-                    <span>
-                      ↗
-                    </span>
-
-                  </a>
-                `;
-
-              }
-            )
-            .join("")}
-
-        </div>
-
-      </div>
-
-    </section>
-  `;
-
-}
-
-
-/* =========================
-   FOOTER
-========================= */
-
-function renderFooter(
-  links,
-  settings
-) {
-
-  const container =
-    document.querySelector(
-      "#footerLinks"
-    );
-
-  if (!container) {
-    return;
-  }
-
-  const items =
-    Array.isArray(links)
-      ? links.filter(enabled)
-      : [];
-
-  container.innerHTML =
-    items
-      .slice(0, 10)
-      .map(
-        (item) => {
-
-          const href =
-            safeUrl(
-              item.url
-            );
-
-          const target =
-            item.newTab
-              ? ' target="_blank" rel="noopener noreferrer"'
-              : "";
-
-          return `
-            <a
-              href="${escapeHtml(href)}"
-              ${target}
-            >
-              ${escapeHtml(
-                item.label ||
-                "Link"
-              )}
-            </a>
-          `;
-
-        }
-      )
-      .join("");
-
-}
-
-
-/* =========================
-   SETTINGS
-========================= */
-
-function applySettings(
-  settings
-) {
-
-  const footer =
-    document.querySelector(
-      "#siteFooter"
-    );
-
-  const footerText =
-    settings.footerText;
-
-  if (
-    settings.showFooter === false &&
-    footer
-  ) {
-
-    footer.hidden = true;
-
-  }
-
-  /*
-    footerText は今後専用UIを
-    追加したときに利用できるよう
-    data属性へ渡す。
-  */
-
-  if (
-    footer &&
-    typeof footerText === "string" &&
-    footerText.trim()
-  ) {
-
-    footer.dataset.footerText =
-      footerText;
-
-  }
-
-}
-
-
-/* =========================
-   CURRENT YEAR
-========================= */
-
-function updateYear() {
-
-  setText(
-    "[data-current-year]",
-    new Date().getFullYear()
-  );
-
-}
-
-
-/* =========================
-   SMOOTH SCROLL
-========================= */
-
-function setupSmoothScroll() {
-
-  document
-    .querySelectorAll(
-      'a[href^="#"]'
-    )
-    .forEach((link) => {
-
-      link.addEventListener(
-        "click",
-        (event) => {
-
-          const href =
-            link.getAttribute(
-              "href"
-            );
-
-          if (
-            !href ||
-            href === "#"
-          ) {
-            return;
-          }
-
-          const target =
-            document.querySelector(
-              href
-            );
-
-          if (!target) {
-            return;
-          }
-
-          event.preventDefault();
-
-          target.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-          });
-
-          history.replaceState(
-            null,
-            "",
-            href
-          );
-
-        }
-      );
-
-    });
-
-}
-
-
-/* =========================
-   REVEAL ANIMATION
-========================= */
-
-function setupReveal() {
-
-  const elements =
-    document.querySelectorAll(
-      ".stat-card, .project-card, .featured-project, .update-card, .github-card, .hero-card"
-    );
-
-  if (!elements.length) {
-    return;
-  }
-
-  if (
-    !("IntersectionObserver" in window)
-  ) {
-    elements.forEach(
-      (element) => {
-        element.classList.add(
-          "is-visible"
-        );
-      }
-    );
-
-    return;
-  }
-
-  const observer =
-    new IntersectionObserver(
-      (entries) => {
-
-        entries.forEach(
-          (entry) => {
-
-            if (
-              !entry.isIntersecting
-            ) {
-              return;
-            }
-
-            entry.target.classList.add(
-              "is-visible"
-            );
-
-            observer.unobserve(
-              entry.target
-            );
-
-          }
-        );
-
-      },
-      {
-        threshold: 0.08
-      }
-    );
-
-  elements.forEach(
-    (element) => {
-
-      element.classList.add(
-        "reveal"
-      );
-
-      observer.observe(
-        element
-      );
-
-    }
-  );
 
 }
 
@@ -1678,54 +1096,34 @@ function setupReveal() {
    FALLBACK
 ========================= */
 
-function renderFallbackMain() {
-
-  const container =
-    document.querySelector(
-      "#siteSections"
-    );
-
-  if (!container) {
-    return;
-  }
-
-  container.innerHTML = `
-    <section class="hero-section section">
-      <div class="container">
-        <div class="hero-card">
-          <div class="hero-content">
-
-            <div class="hero-eyebrow">
-              PERSONAL WEBSITE
-            </div>
-
-            <h1 class="hero-title">
-              こんにちは！
-            </h1>
-
-            <p class="hero-description">
-              maru_m4ru_maru が制作している
-              ツール・サービス・プロジェクトを紹介しています。
-            </p>
-
-          </div>
-        </div>
-      </div>
-    </section>
-  `;
-
-}
-
-
 function renderFallback() {
 
-  console.warn(
-    "[maru-website] rendering fallback"
-  );
+  const container =
+    document.getElementById(
+      "siteSections"
+    );
 
-  renderFallbackMain();
+  container.innerHTML = `
+    <section class="section">
 
-  renderNavigation([]);
+      <div class="section-inner">
+
+        <div class="content-block">
+
+          <h1>
+            maru_m4ru_maru
+          </h1>
+
+          <p>
+            サイトデータを読み込めませんでした。
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+  `;
 
 }
 
@@ -1736,15 +1134,9 @@ function renderFallback() {
 
 document.addEventListener(
   "DOMContentLoaded",
-  async () => {
+  () => {
 
-    updateYear();
-
-    await loadSiteData();
-
-    setupSmoothScroll();
-
-    setupReveal();
+    loadSiteData();
 
   }
 );
