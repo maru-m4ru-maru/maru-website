@@ -63,7 +63,7 @@
     {
       "id": "project-addons",
       "title": "まる Addons",
-      "description": "Scratch / TurboWarp をより便利にするためのツールです",
+      "description": "Scratch / TurboWarp をより便利にするためのツールです。\nもちろんオープンソースなので気軽に使ってね。\n詳しくは下のサイト開いてね。",
       "status": "ONLINE",
       "tags": [
         "Scratch",
@@ -122,7 +122,7 @@
     {
       "id": "section-stats",
       "type": "stats",
-      "title": "Quick Stats",
+      "title": "統計",
       "enabled": true
     },
     {
@@ -134,7 +134,7 @@
     {
       "id": "section-updates",
       "type": "updates",
-      "title": "ニュース",
+      "title": "活動\n",
       "enabled": true
     },
     {
