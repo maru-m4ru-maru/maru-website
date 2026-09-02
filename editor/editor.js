@@ -1,5 +1,13 @@
 const DATA_URL = "../site-data.json";
-const SITE_CSS_URL = "../style.css";
+
+const WORKER_URL =
+  "https://maru-website-admin.maru-0727.workers.dev";
+
+const ADMIN_PAGE_URL =
+  "../admin/";
+
+const DEFAULT_AVATAR =
+  "https://uploads.scratch.mit.edu/get_image/user/175225580_60x60.png";
 
 
 /* =========================================================
@@ -10,11 +18,15 @@ let siteData = null;
 
 let selectedElement = null;
 
+let selectedMeta = null;
+
 let historyStack = [];
 
 let futureStack = [];
 
 let hasChanges = false;
+
+let isRendering = false;
 
 
 /* =========================================================
@@ -71,6 +83,87 @@ const saveStatus =
     "saveStatus"
   );
 
+const floatingToolbar =
+  document.getElementById(
+    "floatingToolbar"
+  );
+
+
+/* =========================================================
+   AUTH
+========================================================= */
+
+function getAdminToken() {
+
+  return sessionStorage.getItem(
+    "maru_admin_token"
+  );
+
+}
+
+
+function getAdminExpiresAt() {
+
+  return Number(
+    sessionStorage.getItem(
+      "maru_admin_expires"
+    ) || 0
+  );
+
+}
+
+
+function isAdminAuthenticated() {
+
+  const token =
+    getAdminToken();
+
+  const expiresAt =
+    getAdminExpiresAt();
+
+  if (!token) {
+    return false;
+  }
+
+  if (
+    !expiresAt ||
+    !Number.isFinite(
+      expiresAt
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    Date.now() >=
+    expiresAt
+  ) {
+    return false;
+  }
+
+  return true;
+
+}
+
+
+function requireAdminAuth() {
+
+  if (
+    !isAdminAuthenticated()
+  ) {
+
+    window.location.replace(
+      ADMIN_PAGE_URL
+    );
+
+    return false;
+
+  }
+
+  return true;
+
+}
+
 
 /* =========================================================
    STATUS
@@ -80,6 +173,10 @@ function setSaveStatus(
   status,
   text
 ) {
+
+  if (!saveStatus) {
+    return;
+  }
 
   saveStatus.className =
     "save-status";
@@ -95,565 +192,12 @@ function setSaveStatus(
 
 
 /* =========================================================
-   HISTORY
+   BASIC HELPERS
 ========================================================= */
 
-function createSnapshot() {
-
-  return JSON.stringify(
-    siteData
-  );
-
-}
-
-
-function pushHistory() {
-
-  historyStack.push(
-    createSnapshot()
-  );
-
-  if (
-    historyStack.length > 50
-  ) {
-
-    historyStack.shift();
-
-  }
-
-  futureStack = [];
-
-  updateHistoryButtons();
-
-}
-
-
-function undo() {
-
-  if (
-    !historyStack.length
-  ) {
-    return;
-  }
-
-  futureStack.push(
-    createSnapshot()
-  );
-
-  const snapshot =
-    historyStack.pop();
-
-  siteData =
-    JSON.parse(
-      snapshot
-    );
-
-  hasChanges = true;
-
-  renderSite();
-
-  updateHistoryButtons();
-
-  setSaveStatus(
-    "dirty",
-    "未保存の変更"
-  );
-
-}
-
-
-function redo() {
-
-  if (
-    !futureStack.length
-  ) {
-    return;
-  }
-
-  historyStack.push(
-    createSnapshot()
-  );
-
-  const snapshot =
-    futureStack.pop();
-
-  siteData =
-    JSON.parse(
-      snapshot
-    );
-
-  hasChanges = true;
-
-  renderSite();
-
-  updateHistoryButtons();
-
-  setSaveStatus(
-    "dirty",
-    "未保存の変更"
-  );
-
-}
-
-
-function updateHistoryButtons() {
-
-  document
-    .getElementById(
-      "undoButton"
-    )
-    .disabled =
-      historyStack.length === 0;
-
-  document
-    .getElementById(
-      "redoButton"
-    )
-    .disabled =
-      futureStack.length === 0;
-
-}
-
-
-/* =========================================================
-   LOAD DATA
-========================================================= */
-
-async function loadSiteData() {
-
-  try {
-
-    const response =
-      await fetch(
-        `${DATA_URL}?cb=${Date.now()}`,
-        {
-          cache:
-            "no-store"
-        }
-      );
-
-    if (!response.ok) {
-
-      throw new Error(
-        `HTTP ${response.status}`
-      );
-
-    }
-
-
-    siteData =
-      await response.json();
-
-
-    renderSite();
-
-
-    setSaveStatus(
-      "saved",
-      "保存済み"
-    );
-
-
-  } catch (error) {
-
-    console.error(
-      error
-    );
-
-    setSaveStatus(
-      "dirty",
-      "読み込み失敗"
-    );
-
-    websiteFrame.innerHTML = `
-      <div style="
-        padding:60px;
-        text-align:center;
-        font-family:sans-serif;
-      ">
-
-        <h2>
-          サイトを読み込めませんでした
-        </h2>
-
-        <p>
-          site-data.json を確認してください。
-        </p>
-
-      </div>
-    `;
-
-  }
-
-}
-
-
-/* =========================================================
-   RENDER
-========================================================= */
-
-async function renderSite() {
-
-  websiteFrame.innerHTML = `
-    <div
-      class="editor-loading"
-      style="
-        padding:60px;
-        text-align:center;
-        color:#888;
-        font-family:sans-serif;
-      "
-    >
-      読み込み中…
-    </div>
-  `;
-
-
-  const site =
-    siteData.site || {};
-
-
-  const container =
-    document.createElement(
-      "div"
-    );
-
-
-  container.className =
-    "website-page";
-
-
-  /*
-    Editor側で公開ページのCSSを
-    読み込む。
-  */
-
-  const style =
-    document.createElement(
-      "link"
-    );
-
-  style.rel =
-    "stylesheet";
-
-  style.href =
-    SITE_CSS_URL;
-
-
-  container.appendChild(
-    style
-  );
-
-
-  /*
-    ページ本体
-  */
-
-  container.insertAdjacentHTML(
-    "beforeend",
-    renderWebsite(
-      siteData
-    )
-  );
-
-
-  websiteFrame.innerHTML =
-    "";
-
-  websiteFrame.appendChild(
-    container
-  );
-
-
-  bindEditorElements(
-    container
-  );
-
-}
-
-
-/* =========================================================
-   WEBSITE RENDERER
-========================================================= */
-
-function renderWebsite(
-  data
+function escapeHtml(
+  value
 ) {
-
-  const site =
-    data.site || {};
-
-  const settings =
-    data.settings || {};
-
-
-  const name =
-    site.name ||
-    "maru_m4ru_maru";
-
-
-  const avatar =
-    site.avatar ||
-    "";
-
-
-  let output = `
-
-    <header class="site-header">
-
-      <div class="container header-inner">
-
-        <a
-          class="brand"
-          href="#top"
-          data-editor-ignore
-        >
-
-          ${
-            avatar
-              ? `
-                <span
-                  class="brand-avatar-wrap"
-                >
-
-                  <img
-                    class="brand-avatar"
-                    src="${escapeHtml(
-                      avatar
-                    )}"
-                    alt=""
-                  >
-
-                </span>
-              `
-              : ""
-          }
-
-
-          <span
-            class="brand-copy"
-          >
-
-            <strong
-              class="brand-name"
-              data-editor-text
-              data-editor-label="サイト名"
-            >
-              ${escapeHtml(
-                name
-              )}
-            </strong>
-
-            <span
-              class="brand-subtitle"
-            >
-              OFFICIAL WEBSITE
-            </span>
-
-          </span>
-
-        </a>
-
-
-        <nav
-          class="nav"
-        >
-
-          ${renderNavigation(
-            data.navigation
-          )}
-
-        </nav>
-
-      </div>
-
-    </header>
-
-
-    <main id="top">
-
-  `;
-
-
-  const sections =
-    Array.isArray(
-      data.sections
-    )
-      ? data.sections
-      : [];
-
-
-  sections
-    .filter(
-      isEnabled
-    )
-    .forEach(
-      (section) => {
-
-        switch (
-          section.type
-        ) {
-
-          case "hero":
-
-            output +=
-              renderHero(
-                section,
-                data
-              );
-
-            break;
-
-
-          case "stats":
-
-            output +=
-              renderStats(
-                section,
-                data
-              );
-
-            break;
-
-
-          case "projects":
-
-            output +=
-              renderProjects(
-                section,
-                data
-              );
-
-            break;
-
-
-          case "updates":
-
-            output +=
-              renderUpdates(
-                section,
-                data
-              );
-
-            break;
-
-
-          case "github":
-
-            output +=
-              renderGithub(
-                section,
-                data
-              );
-
-            break;
-
-
-          case "links":
-
-            output +=
-              renderLinks(
-                section,
-                data
-              );
-
-            break;
-
-
-          case "text":
-
-            output +=
-              renderText(
-                section
-              );
-
-            break;
-
-        }
-
-      }
-    );
-
-
-  output += `
-    </main>
-  `;
-
-
-  if (
-    settings.showFooter !== false
-  ) {
-
-    output += `
-
-      <footer
-        class="site-footer"
-      >
-
-        <div
-          class="container footer-inner"
-        >
-
-          <div
-            class="footer-left"
-          >
-
-            <strong
-              data-editor-text
-              data-editor-label="フッターサイト名"
-            >
-              ${escapeHtml(
-                name
-              )}
-            </strong>
-
-            <span
-              class="footer-text"
-            >
-              ${escapeHtml(
-                settings.footerText ||
-                "Built by maru_m4ru_maru"
-              )}
-            </span>
-
-          </div>
-
-          <div
-            class="footer-right"
-          >
-            ©
-            ${new Date().getFullYear()}
-          </div>
-
-        </div>
-
-      </footer>
-
-    `;
-
-  }
-
-
-  return output;
-
-}
-
-
-/* =========================================================
-   COMPONENTS
-========================================================= */
-
-function isEnabled(item) {
-
-  return (
-    item &&
-    item.enabled !== false
-  );
-
-}
-
-
-function escapeHtml(value) {
 
   return String(
     value ?? ""
@@ -682,31 +226,725 @@ function escapeHtml(value) {
 }
 
 
+function isObject(
+  value
+) {
+
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  );
+
+}
+
+
+function isEnabled(
+  item
+) {
+
+  return (
+    item &&
+    item.enabled !== false
+  );
+
+}
+
+
+function arrayValue(
+  value
+) {
+
+  return Array.isArray(value)
+    ? value
+    : [];
+
+}
+
+
+function safeUrl(
+  value
+) {
+
+  if (
+    typeof value !== "string" ||
+    !value.trim()
+  ) {
+
+    return "#";
+
+  }
+
+  return value.trim();
+
+}
+
+
+function cloneData(
+  data
+) {
+
+  return JSON.parse(
+    JSON.stringify(data)
+  );
+
+}
+
+
+/* =========================================================
+   HISTORY
+========================================================= */
+
+function pushHistory() {
+
+  if (!siteData) {
+    return;
+  }
+
+  historyStack.push(
+    cloneData(
+      siteData
+    )
+  );
+
+  if (
+    historyStack.length > 50
+  ) {
+
+    historyStack.shift();
+
+  }
+
+  futureStack = [];
+
+  updateHistoryButtons();
+
+}
+
+
+function undo() {
+
+  if (
+    historyStack.length === 0
+  ) {
+    return;
+  }
+
+  futureStack.push(
+    cloneData(
+      siteData
+    )
+  );
+
+  siteData =
+    historyStack.pop();
+
+  hasChanges = true;
+
+  selectedElement = null;
+  selectedMeta = null;
+
+  renderSite();
+
+  updateHistoryButtons();
+
+  setSaveStatus(
+    "dirty",
+    "未保存の変更"
+  );
+
+}
+
+
+function redo() {
+
+  if (
+    futureStack.length === 0
+  ) {
+    return;
+  }
+
+  historyStack.push(
+    cloneData(
+      siteData
+    )
+  );
+
+  siteData =
+    futureStack.pop();
+
+  hasChanges = true;
+
+  selectedElement = null;
+  selectedMeta = null;
+
+  renderSite();
+
+  updateHistoryButtons();
+
+  setSaveStatus(
+    "dirty",
+    "未保存の変更"
+  );
+
+}
+
+
+function updateHistoryButtons() {
+
+  const undoButton =
+    document.getElementById(
+      "undoButton"
+    );
+
+  const redoButton =
+    document.getElementById(
+      "redoButton"
+    );
+
+
+  if (undoButton) {
+
+    undoButton.disabled =
+      historyStack.length === 0;
+
+  }
+
+
+  if (redoButton) {
+
+    redoButton.disabled =
+      futureStack.length === 0;
+
+  }
+
+}
+
+
+/* =========================================================
+   DATA LOAD
+========================================================= */
+
+async function loadSiteData() {
+
+  try {
+
+    const response =
+      await fetch(
+        `${DATA_URL}?cb=${Date.now()}`,
+        {
+          cache:
+            "no-store"
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        `site-data.json の読み込みに失敗しました (HTTP ${response.status})`
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
+
+    if (
+      !isObject(data)
+    ) {
+
+      throw new Error(
+        "site-data.json の形式が不正です"
+      );
+
+    }
+
+
+    siteData =
+      data;
+
+
+    renderSite();
+
+
+    setSaveStatus(
+      "saved",
+      "保存済み"
+    );
+
+
+  } catch (
+    error
+  ) {
+
+    console.error(
+      "[Editor] data load error",
+      error
+    );
+
+
+    setSaveStatus(
+      "dirty",
+      "読み込み失敗"
+    );
+
+
+    websiteFrame.innerHTML = `
+
+      <div
+        class="editor-load-error"
+        style="
+          padding:60px;
+          text-align:center;
+          font-family:sans-serif;
+          color:#555;
+        "
+      >
+
+        <h2>
+          サイトを読み込めませんでした
+        </h2>
+
+        <p>
+          ${escapeHtml(
+            error.message
+          )}
+        </p>
+
+      </div>
+
+    `;
+
+  }
+
+}
+
+
+/* =========================================================
+   RENDER SITE
+========================================================= */
+
+function renderSite() {
+
+  if (!siteData) {
+    return;
+  }
+
+
+  isRendering = true;
+
+
+  clearSelection();
+
+
+  websiteFrame.innerHTML =
+    "";
+
+
+  const wrapper =
+    document.createElement(
+      "div"
+    );
+
+
+  wrapper.className =
+    "website-page";
+
+
+  /*
+    公開サイトのCSSをそのまま使う。
+  */
+
+  const style =
+    document.createElement(
+      "style"
+    );
+
+
+  style.textContent =
+    getEditorScopedCSS();
+
+
+  wrapper.appendChild(
+    style
+  );
+
+
+  wrapper.insertAdjacentHTML(
+    "beforeend",
+    renderWebsite(
+      siteData
+    )
+  );
+
+
+  websiteFrame.appendChild(
+    wrapper
+  );
+
+
+  bindEditorElements(
+    wrapper
+  );
+
+
+  isRendering = false;
+
+}
+
+
+/* =========================================================
+   WEBSITE
+========================================================= */
+
+function renderWebsite(
+  data
+) {
+
+  const site =
+    data.site || {};
+
+  const settings =
+    data.settings || {};
+
+
+  const siteName =
+    site.name ||
+    "maru_m4ru_maru";
+
+
+  const avatar =
+    site.avatar ||
+    DEFAULT_AVATAR;
+
+
+  let html = "";
+
+
+  /* -------------------------------------------------------
+     HEADER
+  ------------------------------------------------------- */
+
+  html += `
+
+    <header
+      class="site-header"
+      data-editor-ignore
+    >
+
+      <div
+        class="container header-inner"
+      >
+
+        <a
+          class="brand"
+          href="#top"
+        >
+
+          <span
+            class="brand-avatar-wrap"
+          >
+
+            <img
+              class="brand-avatar"
+              src="${escapeHtml(
+                avatar
+              )}"
+              alt="${escapeHtml(
+                siteName
+              )}"
+            >
+
+          </span>
+
+
+          <span
+            class="brand-copy"
+          >
+
+            <strong
+              class="brand-name"
+            >
+              ${escapeHtml(
+                siteName
+              )}
+            </strong>
+
+            <span
+              class="brand-subtitle"
+            >
+              OFFICIAL WEBSITE
+            </span>
+
+          </span>
+
+        </a>
+
+
+        <nav class="nav">
+
+          ${
+            renderNavigation(
+              data.navigation
+            )
+          }
+
+        </nav>
+
+      </div>
+
+    </header>
+
+  `;
+
+
+  /* -------------------------------------------------------
+     MAIN
+  ------------------------------------------------------- */
+
+  html += `
+    <main id="top">
+  `;
+
+
+  const sections =
+    arrayValue(
+      data.sections
+    );
+
+
+  sections
+    .filter(
+      isEnabled
+    )
+    .forEach(
+      (
+        section,
+        sectionIndex
+      ) => {
+
+        const type =
+          String(
+            section.type ||
+            ""
+          ).toLowerCase();
+
+
+        switch (
+          type
+        ) {
+
+          case "hero":
+
+            html +=
+              renderHero(
+                section,
+                data,
+                sectionIndex
+              );
+
+            break;
+
+
+          case "stats":
+
+            html +=
+              renderStats(
+                section,
+                data,
+                sectionIndex
+              );
+
+            break;
+
+
+          case "projects":
+
+            html +=
+              renderProjects(
+                section,
+                data,
+                sectionIndex
+              );
+
+            break;
+
+
+          case "updates":
+
+            html +=
+              renderUpdates(
+                section,
+                data,
+                sectionIndex
+              );
+
+            break;
+
+
+          case "embeds":
+
+            html +=
+              renderEmbeds(
+                section,
+                data,
+                sectionIndex
+              );
+
+            break;
+
+
+          case "links":
+
+            html +=
+              renderLinks(
+                section,
+                data,
+                sectionIndex
+              );
+
+            break;
+
+
+          case "github":
+
+            html +=
+              renderGithub(
+                section,
+                data,
+                sectionIndex
+              );
+
+            break;
+
+
+          case "text":
+
+            html +=
+              renderText(
+                section,
+                sectionIndex
+              );
+
+            break;
+
+        }
+
+      }
+    );
+
+
+  html += `
+    </main>
+  `;
+
+
+  /* -------------------------------------------------------
+     FOOTER
+  ------------------------------------------------------- */
+
+  if (
+    settings.showFooter !== false
+  ) {
+
+    html += `
+
+      <footer
+        class="site-footer"
+        data-editor-element
+        data-editor-label="フッター"
+      >
+
+        <div
+          class="container footer-inner"
+        >
+
+          <div
+            class="footer-left"
+          >
+
+            <strong
+              data-editor-text
+              data-editor-label="フッターサイト名"
+              data-cms-path="site.name"
+            >
+              ${escapeHtml(
+                siteName
+              )}
+            </strong>
+
+
+            <span
+              class="footer-text"
+              data-editor-text
+              data-editor-label="フッターテキスト"
+              data-cms-path="settings.footerText"
+            >
+              ${escapeHtml(
+                settings.footerText ||
+                "Built by maru_m4ru_maru"
+              )}
+            </span>
+
+          </div>
+
+
+          <div
+            class="footer-right"
+          >
+
+            ©
+            ${new Date().getFullYear()}
+
+          </div>
+
+        </div>
+
+      </footer>
+
+    `;
+
+  }
+
+
+  return html;
+
+}
+
+
+/* =========================================================
+   NAVIGATION
+========================================================= */
+
 function renderNavigation(
   navigation
 ) {
 
-  if (
-    !Array.isArray(
+  const items =
+    arrayValue(
       navigation
-    )
-  ) {
-    return "";
-  }
+    );
 
 
-  return navigation
+  return items
     .filter(
       isEnabled
     )
     .map(
-      (item) => `
+      (
+        item,
+        index
+      ) => `
 
         <a
           class="nav-link"
           href="${escapeHtml(
-            item.href ||
-            "#"
+            safeUrl(
+              item.href
+            )
           )}"
           ${
             item.newTab
@@ -716,13 +954,14 @@ function renderNavigation(
           }
           data-editor-element
           data-editor-label="ナビゲーション"
+          data-cms-path="navigation.${index}.label"
+          data-cms-kind="navigation"
+          data-cms-index="${index}"
         >
-
           ${escapeHtml(
             item.label ||
             "Link"
           )}
-
         </a>
 
       `
@@ -732,13 +971,30 @@ function renderNavigation(
 }
 
 
+/* =========================================================
+   HERO
+========================================================= */
+
 function renderHero(
   section,
-  data
+  data,
+  sectionIndex
 ) {
 
   const site =
     data.site || {};
+
+
+  const title =
+    section.title ||
+    site.tagline ||
+    "こんにちは！";
+
+
+  const description =
+    section.description ||
+    site.description ||
+    "";
 
 
   return `
@@ -746,6 +1002,10 @@ function renderHero(
     <section
       id="hero"
       class="hero"
+      data-editor-element
+      data-editor-label="Hero"
+      data-cms-kind="section"
+      data-cms-index="${sectionIndex}"
     >
 
       <div
@@ -763,7 +1023,7 @@ function renderHero(
             <div
               class="eyebrow"
               data-editor-text
-              data-editor-label="Hero見出し"
+              data-editor-label="Heroラベル"
             >
               INDIE DEVELOPER
             </div>
@@ -772,11 +1032,10 @@ function renderHero(
             <h1
               data-editor-text
               data-editor-label="Heroタイトル"
+              data-cms-path="sections.${sectionIndex}.title"
             >
               ${escapeHtml(
-                section.title ||
-                site.tagline ||
-                "こんにちは！"
+                title
               )}
             </h1>
 
@@ -785,11 +1044,10 @@ function renderHero(
               class="hero-description"
               data-editor-text
               data-editor-label="Hero説明"
+              data-cms-path="sections.${sectionIndex}.description"
             >
               ${escapeHtml(
-                section.description ||
-                site.description ||
-                ""
+                description
               )}
             </p>
 
@@ -811,6 +1069,7 @@ function renderHero(
               ${
                 site.github
                   ? `
+
                     <a
                       class="button button-light"
                       href="${escapeHtml(
@@ -820,9 +1079,11 @@ function renderHero(
                       rel="noopener noreferrer"
                       data-editor-element
                       data-editor-label="GitHubボタン"
+                      data-cms-path="site.github"
                     >
                       GitHub
                     </a>
+
                   `
                   : ""
               }
@@ -842,19 +1103,22 @@ function renderHero(
 }
 
 
+/* =========================================================
+   STATS
+========================================================= */
+
 function renderStats(
   section,
-  data
+  data,
+  sectionIndex
 ) {
 
   const stats =
-    Array.isArray(
+    arrayValue(
       data.stats
-    )
-      ? data.stats.filter(
-          isEnabled
-        )
-      : [];
+    ).filter(
+      isEnabled
+    );
 
 
   if (!stats.length) {
@@ -885,9 +1149,11 @@ function renderStats(
               OVERVIEW
             </span>
 
+
             <h2
               data-editor-text
               data-editor-label="Statsタイトル"
+              data-cms-path="sections.${sectionIndex}.title"
             >
               ${escapeHtml(
                 section.title ||
@@ -906,49 +1172,77 @@ function renderStats(
 
           ${stats
             .map(
-              (stat) => `
+              (
+                stat,
+                visibleIndex
+              ) => {
 
-                <article
-                  class="stat-card"
-                  data-editor-element
-                  data-editor-label="統計カード"
-                >
+                const originalIndex =
+                  data.stats.indexOf(
+                    stat
+                  );
 
-                  <span
-                    class="stat-label"
+
+                return `
+
+                  <article
+                    class="stat-card"
+                    data-editor-element
+                    data-editor-label="統計カード"
+                    data-cms-kind="stat"
+                    data-cms-index="${originalIndex}"
                   >
-                    ${escapeHtml(
-                      stat.label ||
-                      ""
-                    )}
-                  </span>
 
-                  <strong
-                    class="stat-value"
-                  >
-                    ${escapeHtml(
-                      stat.value ||
-                      ""
-                    )}
-                  </strong>
+                    <span
+                      class="stat-label"
+                      data-editor-text
+                      data-editor-label="統計ラベル"
+                      data-cms-path="stats.${originalIndex}.label"
+                    >
+                      ${escapeHtml(
+                        stat.label ||
+                        ""
+                      )}
+                    </span>
 
-                  ${
-                    stat.meta
-                      ? `
-                        <span
-                          class="stat-meta"
-                        >
-                          ${escapeHtml(
-                            stat.meta
-                          )}
-                        </span>
-                      `
-                      : ""
-                  }
 
-                </article>
+                    <strong
+                      class="stat-value"
+                      data-editor-text
+                      data-editor-label="統計値"
+                      data-cms-path="stats.${originalIndex}.value"
+                    >
+                      ${escapeHtml(
+                        stat.value ||
+                        ""
+                      )}
+                    </strong>
 
-              `
+
+                    ${
+                      stat.meta
+                        ? `
+
+                          <span
+                            class="stat-meta"
+                            data-editor-text
+                            data-editor-label="統計補足"
+                            data-cms-path="stats.${originalIndex}.meta"
+                          >
+                            ${escapeHtml(
+                              stat.meta
+                            )}
+                          </span>
+
+                        `
+                        : ""
+                    }
+
+                  </article>
+
+                `;
+
+              }
             )
             .join("")}
 
@@ -963,19 +1257,22 @@ function renderStats(
 }
 
 
+/* =========================================================
+   PROJECTS
+========================================================= */
+
 function renderProjects(
   section,
-  data
+  data,
+  sectionIndex
 ) {
 
   const projects =
-    Array.isArray(
+    arrayValue(
       data.projects
-    )
-      ? data.projects.filter(
-          isEnabled
-        )
-      : [];
+    ).filter(
+      isEnabled
+    );
 
 
   if (!projects.length) {
@@ -1006,9 +1303,11 @@ function renderProjects(
               WORK
             </span>
 
+
             <h2
               data-editor-text
               data-editor-label="Projectsタイトル"
+              data-cms-path="sections.${sectionIndex}.title"
             >
               ${escapeHtml(
                 section.title ||
@@ -1027,155 +1326,22 @@ function renderProjects(
 
           ${projects
             .map(
-              (project) => `
+              (
+                project
+              ) => {
 
-                <article
-                  class="
-                    project-card
-                    ${
-                      project.featured
-                        ? "project-featured"
-                        : ""
-                    }
-                  "
-                  data-editor-element
-                  data-editor-label="プロジェクト"
-                >
-
-                  <div
-                    class="project-top"
-                  >
-
-                    <div
-                      class="project-icon"
-                    >
-                      ${escapeHtml(
-                        project.icon ||
-                        "PR"
-                      )}
-                    </div>
-
-                    ${
-                      project.status
-                        ? `
-                          <span
-                            class="project-status"
-                          >
-                            ${escapeHtml(
-                              project.status
-                            )}
-                          </span>
-                        `
-                        : ""
-                    }
-
-                  </div>
+                const originalIndex =
+                  data.projects.indexOf(
+                    project
+                  );
 
 
-                  <div
-                    class="project-body"
-                  >
+                return renderProjectCard(
+                  project,
+                  originalIndex
+                );
 
-                    <h3
-                      data-editor-text
-                      data-editor-label="プロジェクト名"
-                    >
-                      ${escapeHtml(
-                        project.title ||
-                        "Untitled Project"
-                      )}
-                    </h3>
-
-
-                    <p
-                      data-editor-text
-                      data-editor-label="プロジェクト説明"
-                    >
-                      ${escapeHtml(
-                        project.description ||
-                        ""
-                      )}
-                    </p>
-
-
-                    ${
-                      Array.isArray(
-                        project.tags
-                      ) &&
-                      project.tags.length
-                        ? `
-                          <div
-                            class="project-tags"
-                          >
-
-                            ${project.tags
-                              .map(
-                                (tag) => `
-                                  <span>
-                                    ${escapeHtml(
-                                      tag
-                                    )}
-                                  </span>
-                                `
-                              )
-                              .join("")}
-
-                          </div>
-                        `
-                        : ""
-                    }
-
-                  </div>
-
-
-                  ${
-                    project.url ||
-                    project.github
-                      ? `
-                        <div
-                          class="project-actions"
-                        >
-
-                          ${
-                            project.url
-                              ? `
-                                <a
-                                  href="${escapeHtml(
-                                    project.url
-                                  )}"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  Open
-                                </a>
-                              `
-                              : ""
-                          }
-
-                          ${
-                            project.github
-                              ? `
-                                <a
-                                  href="${escapeHtml(
-                                    project.github
-                                  )}"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  GitHub
-                                </a>
-                              `
-                              : ""
-                          }
-
-                        </div>
-                      `
-                      : ""
-                  }
-
-                </article>
-
-              `
+              }
             )
             .join("")}
 
@@ -1190,19 +1356,208 @@ function renderProjects(
 }
 
 
+/* =========================================================
+   PROJECT CARD
+========================================================= */
+
+function renderProjectCard(
+  project,
+  index
+) {
+
+  const tags =
+    arrayValue(
+      project.tags
+    );
+
+
+  return `
+
+    <article
+      class="
+        project-card
+        ${
+          project.featured
+            ? "project-featured"
+            : ""
+        }
+      "
+      data-editor-element
+      data-editor-label="プロジェクト"
+      data-cms-kind="project"
+      data-cms-index="${index}"
+    >
+
+      <div
+        class="project-top"
+      >
+
+        <div
+          class="project-icon"
+        >
+          ${escapeHtml(
+            project.icon ||
+            "PR"
+          )}
+        </div>
+
+
+        ${
+          project.status
+            ? `
+
+              <span
+                class="project-status"
+              >
+                ${escapeHtml(
+                  project.status
+                )}
+              </span>
+
+            `
+            : ""
+        }
+
+      </div>
+
+
+      <div
+        class="project-body"
+      >
+
+        <h3
+          data-editor-text
+          data-editor-label="プロジェクト名"
+          data-cms-path="projects.${index}.title"
+        >
+          ${escapeHtml(
+            project.title ||
+            "Untitled Project"
+          )}
+        </h3>
+
+
+        <p
+          data-editor-text
+          data-editor-label="プロジェクト説明"
+          data-cms-path="projects.${index}.description"
+        >
+          ${escapeHtml(
+            project.description ||
+            ""
+          )}
+        </p>
+
+
+        ${
+          tags.length
+            ? `
+
+              <div
+                class="project-tags"
+              >
+
+                ${tags
+                  .map(
+                    (tag) => `
+                      <span>
+                        ${escapeHtml(
+                          tag
+                        )}
+                      </span>
+                    `
+                  )
+                  .join("")}
+
+              </div>
+
+            `
+            : ""
+        }
+
+      </div>
+
+
+      ${
+        project.url ||
+        project.github
+          ? `
+
+            <div
+              class="project-actions"
+            >
+
+              ${
+                project.url
+                  ? `
+
+                    <a
+                      href="${escapeHtml(
+                        project.url
+                      )}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open
+                    </a>
+
+                  `
+                  : ""
+              }
+
+
+              ${
+                project.github
+                  ? `
+
+                    <a
+                      href="${escapeHtml(
+                        project.github
+                      )}"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      GitHub
+                    </a>
+
+                  `
+                  : ""
+              }
+
+            </div>
+
+          `
+          : ""
+      }
+
+    </article>
+
+  `;
+
+}
+
+
+/* =========================================================
+   UPDATES
+========================================================= */
+
 function renderUpdates(
   section,
-  data
+  data,
+  sectionIndex
 ) {
 
   const updates =
-    Array.isArray(
+    arrayValue(
       data.updates
     )
-      ? data.updates.filter(
-          isEnabled
-        )
-      : [];
+      .filter(
+        isEnabled
+      )
+      .slice(
+        0,
+        10
+      );
 
 
   if (!updates.length) {
@@ -1233,9 +1588,11 @@ function renderUpdates(
               CHANGELOG
             </span>
 
+
             <h2
               data-editor-text
               data-editor-label="Updatesタイトル"
+              data-cms-path="sections.${sectionIndex}.title"
             >
               ${escapeHtml(
                 section.title ||
@@ -1254,84 +1611,104 @@ function renderUpdates(
 
           ${updates
             .map(
-              (update) => `
+              (
+                update
+              ) => {
 
-                <article
-                  class="update-card"
-                  data-editor-element
-                  data-editor-label="アップデート"
-                >
+                const originalIndex =
+                  data.updates.indexOf(
+                    update
+                  );
 
-                  <div
-                    class="update-date"
+
+                return `
+
+                  <article
+                    class="update-card"
+                    data-editor-element
+                    data-editor-label="アップデート"
+                    data-cms-kind="update"
+                    data-cms-index="${originalIndex}"
                   >
-                    ${escapeHtml(
-                      update.date ||
-                      ""
-                    )}
-                  </div>
+
+                    <div
+                      class="update-date"
+                    >
+                      ${escapeHtml(
+                        update.date ||
+                        ""
+                      )}
+                    </div>
 
 
-                  <div
-                    class="update-content"
-                  >
+                    <div
+                      class="update-content"
+                    >
+
+                      ${
+                        update.project
+                          ? `
+
+                            <span
+                              class="update-project"
+                            >
+                              ${escapeHtml(
+                                update.project
+                              )}
+                            </span>
+
+                          `
+                          : ""
+                      }
+
+
+                      <h3
+                        data-editor-text
+                        data-editor-label="アップデートタイトル"
+                        data-cms-path="updates.${originalIndex}.title"
+                      >
+                        ${escapeHtml(
+                          update.title ||
+                          "Update"
+                        )}
+                      </h3>
+
+
+                      <p
+                        data-editor-text
+                        data-editor-label="アップデート説明"
+                        data-cms-path="updates.${originalIndex}.description"
+                      >
+                        ${escapeHtml(
+                          update.description ||
+                          ""
+                        )}
+                      </p>
+
+                    </div>
+
 
                     ${
-                      update.project
+                      update.version
                         ? `
+
                           <span
-                            class="update-project"
+                            class="update-version"
                           >
                             ${escapeHtml(
-                              update.project
+                              update.version
                             )}
                           </span>
+
                         `
                         : ""
                     }
 
+                  </article>
 
-                    <h3
-                      data-editor-text
-                      data-editor-label="アップデートタイトル"
-                    >
-                      ${escapeHtml(
-                        update.title ||
-                        "Update"
-                      )}
-                    </h3>
+                `;
 
-
-                    <p
-                      data-editor-text
-                      data-editor-label="アップデート説明"
-                    >
-                      ${escapeHtml(
-                        update.description ||
-                        ""
-                      )}
-                    </p>
-
-                  </div>
-
-
-                  ${
-                    update.version
-                      ? `
-                        <span
-                          class="update-version"
-                        >
-                          ${escapeHtml(
-                            update.version
-                          )}
-                        </span>
-                      `
-                      : ""
-                  }
-
-                </article>
-
-              `
+              }
             )
             .join("")}
 
@@ -1346,9 +1723,14 @@ function renderUpdates(
 }
 
 
+/* =========================================================
+   GITHUB
+========================================================= */
+
 function renderGithub(
   section,
-  data
+  data,
+  sectionIndex
 ) {
 
   if (
@@ -1394,6 +1776,7 @@ function renderGithub(
             <h2
               data-editor-text
               data-editor-label="GitHubタイトル"
+              data-cms-path="sections.${sectionIndex}.title"
             >
               ${escapeHtml(
                 section.title ||
@@ -1406,8 +1789,7 @@ function renderGithub(
               data-editor-text
               data-editor-label="GitHub説明"
             >
-              コードや制作物は
-              GitHub で公開しています。
+              コードや制作物はGitHubで公開しています。
             </p>
 
           </div>
@@ -1416,6 +1798,7 @@ function renderGithub(
           ${
             github !== "#"
               ? `
+
                 <a
                   class="button button-dark"
                   href="${escapeHtml(
@@ -1423,9 +1806,12 @@ function renderGithub(
                   )}"
                   target="_blank"
                   rel="noopener noreferrer"
+                  data-editor-element
+                  data-editor-label="GitHubリンク"
                 >
                   GitHubを見る
                 </a>
+
               `
               : ""
           }
@@ -1441,19 +1827,119 @@ function renderGithub(
 }
 
 
+/* =========================================================
+   EMBEDS
+========================================================= */
+
+function renderEmbeds(
+  section,
+  data,
+  sectionIndex
+) {
+
+  const embeds =
+    arrayValue(
+      data.embeds
+    ).filter(
+      (item) =>
+        isEnabled(item) &&
+        item.url
+    );
+
+
+  if (!embeds.length) {
+    return "";
+  }
+
+
+  return `
+
+    <section
+      class="section"
+    >
+
+      <div
+        class="container embed-list"
+      >
+
+        ${embeds
+          .map(
+            (
+              embed
+            ) => `
+
+              <article
+                class="embed-card"
+                data-editor-element
+                data-editor-label="埋め込み"
+              >
+
+                <div
+                  class="embed-header"
+                >
+
+                  <h2
+                    data-editor-text
+                    data-editor-label="埋め込みタイトル"
+                  >
+                    ${escapeHtml(
+                      embed.title ||
+                      "Embed"
+                    )}
+                  </h2>
+
+                </div>
+
+
+                <iframe
+                  src="${escapeHtml(
+                    embed.url
+                  )}"
+                  width="${escapeHtml(
+                    embed.width ||
+                    "100%"
+                  )}"
+                  height="${escapeHtml(
+                    embed.height ||
+                    "420"
+                  )}"
+                  loading="lazy"
+                  title="${escapeHtml(
+                    embed.title ||
+                    "Embedded content"
+                  )}"
+                ></iframe>
+
+              </article>
+
+            `
+          )
+          .join("")}
+
+      </div>
+
+    </section>
+
+  `;
+
+}
+
+
+/* =========================================================
+   LINKS
+========================================================= */
+
 function renderLinks(
   section,
   data
 ) {
 
   const links =
-    Array.isArray(
+    arrayValue(
       data.links
-    )
-      ? data.links.filter(
-          isEnabled
-        )
-      : [];
+    ).filter(
+      isEnabled
+    );
 
 
   if (!links.length) {
@@ -1472,18 +1958,43 @@ function renderLinks(
       >
 
         <div
+          class="section-heading"
+        >
+
+          <div>
+
+            <span
+              class="eyebrow muted"
+            >
+              LINKS
+            </span>
+
+            <h2>
+              Links
+            </h2>
+
+          </div>
+
+        </div>
+
+
+        <div
           class="links-grid"
         >
 
           ${links
             .map(
-              (link) => `
+              (
+                link,
+                index
+              ) => `
 
                 <a
                   class="link-card"
                   href="${escapeHtml(
-                    link.url ||
-                    "#"
+                    safeUrl(
+                      link.url
+                    )
                   )}"
                   ${
                     link.newTab
@@ -1493,6 +2004,7 @@ function renderLinks(
                   }
                   data-editor-element
                   data-editor-label="リンク"
+                  data-cms-path="links.${index}.label"
                 >
 
                   <span>
@@ -1523,8 +2035,13 @@ function renderLinks(
 }
 
 
+/* =========================================================
+   TEXT
+========================================================= */
+
 function renderText(
-  section
+  section,
+  sectionIndex
 ) {
 
   return `
@@ -1553,6 +2070,7 @@ function renderText(
           <h2
             data-editor-text
             data-editor-label="見出し"
+            data-cms-path="sections.${sectionIndex}.title"
           >
             ${escapeHtml(
               section.title ||
@@ -1564,6 +2082,7 @@ function renderText(
           <p
             data-editor-text
             data-editor-label="本文"
+            data-cms-path="sections.${sectionIndex}.description"
           >
             ${escapeHtml(
               section.description ||
@@ -1582,25 +2101,6 @@ function renderText(
 }
 
 
-function safeUrl(
-  value
-) {
-
-  if (
-    typeof value !==
-      "string" ||
-    !value.trim()
-  ) {
-
-    return "#";
-
-  }
-
-  return value.trim();
-
-}
-
-
 /* =========================================================
    EDITOR BINDING
 ========================================================= */
@@ -1609,79 +2109,80 @@ function bindEditorElements(
   root
 ) {
 
-  const editableElements =
-    root.querySelectorAll(
+  root
+    .querySelectorAll(
       `
         [data-editor-text],
         [data-editor-element]
       `
-    );
+    )
+    .forEach(
+      (
+        element
+      ) => {
+
+        if (
+          element.dataset.editorIgnore !==
+          undefined
+        ) {
+          return;
+        }
 
 
-  editableElements.forEach(
-    (element) => {
+        element.addEventListener(
+          "mouseenter",
+          () => {
 
-      if (
-        element.dataset.editorIgnore
-      ) {
-        return;
-      }
+            if (
+              selectedElement ===
+              element
+            ) {
+              return;
+            }
 
+            element.classList.add(
+              "editor-hover"
+            );
 
-      element.addEventListener(
-        "mouseenter",
-        () => {
-
-          if (
-            element ===
-            selectedElement
-          ) {
-            return;
           }
-
-          element.classList.add(
-            "editor-hover"
-          );
-
-        }
-      );
+        );
 
 
-      element.addEventListener(
-        "mouseleave",
-        () => {
+        element.addEventListener(
+          "mouseleave",
+          () => {
 
-          element.classList.remove(
-            "editor-hover"
-          );
+            element.classList.remove(
+              "editor-hover"
+            );
 
-        }
-      );
+          }
+        );
 
 
-      element.addEventListener(
-        "click",
-        (event) => {
+        element.addEventListener(
+          "click",
+          (event) => {
 
-          event.preventDefault();
+            event.preventDefault();
 
-          event.stopPropagation();
+            event.stopPropagation();
 
-          selectElement(
-            element
-          );
+            selectElement(
+              element
+            );
 
-        }
-      );
+          }
+        );
 
-    }
-  );
+      }
+    );
 
 }
 
 
 /* =========================================================
-   SELECT
+   SELECT ELEMENT
 ========================================================= */
 
 function selectElement(
@@ -1689,7 +2190,15 @@ function selectElement(
 ) {
 
   if (
-    selectedElement
+    isRendering
+  ) {
+    return;
+  }
+
+
+  if (
+    selectedElement &&
+    selectedElement !== element
   ) {
 
     selectedElement.classList.remove(
@@ -1703,7 +2212,22 @@ function selectElement(
     element;
 
 
-  selectedElement.classList.add(
+  selectedMeta = {
+    label:
+      element.dataset.editorLabel ||
+      "要素",
+    type:
+      element.dataset.editorText !==
+      undefined
+        ? "TEXT"
+        : "ELEMENT",
+    path:
+      element.dataset.cmsPath ||
+      null
+  };
+
+
+  element.classList.add(
     "editor-selected"
   );
 
@@ -1716,6 +2240,59 @@ function selectElement(
   positionFloatingToolbar(
     element
   );
+
+}
+
+
+/* =========================================================
+   CLEAR SELECTION
+========================================================= */
+
+function clearSelection() {
+
+  if (
+    selectedElement
+  ) {
+
+    selectedElement.classList.remove(
+      "editor-selected"
+    );
+
+  }
+
+
+  selectedElement =
+    null;
+
+  selectedMeta =
+    null;
+
+
+  if (
+    floatingToolbar
+  ) {
+
+    floatingToolbar.classList.add(
+      "hidden"
+    );
+
+  }
+
+
+  if (
+    propertyEmpty &&
+    propertyContent
+  ) {
+
+    propertyEmpty.classList.remove(
+      "hidden"
+    );
+
+    propertyContent.classList.add(
+      "hidden"
+    );
+
+  }
 
 }
 
@@ -1737,13 +2314,9 @@ function showPropertyPanel(
   );
 
 
-  const label =
+  propertyTitle.textContent =
     element.dataset.editorLabel ||
     "要素を編集";
-
-
-  propertyTitle.textContent =
-    label;
 
 
   if (
@@ -1754,7 +2327,7 @@ function showPropertyPanel(
     propertyType.textContent =
       "TEXT";
 
-    showTextEditor(
+    setupTextControls(
       element
     );
 
@@ -1763,26 +2336,9 @@ function showPropertyPanel(
     propertyType.textContent =
       "ELEMENT";
 
-    hideAllControls();
-
-    colorControls.classList.remove(
-      "hidden"
+    setupElementControls(
+      element
     );
-
-    linkControls.classList.remove(
-      "hidden"
-    );
-
-    if (
-      element.tagName ===
-      "IMG"
-    ) {
-
-      imageControls.classList.remove(
-        "hidden"
-      );
-
-    }
 
   }
 
@@ -1790,179 +2346,7 @@ function showPropertyPanel(
 
 
 /* =========================================================
-   TEXT EDITOR
-========================================================= */
-
-function showTextEditor(
-  element
-) {
-
-  hideAllControls();
-
-
-  textControls.classList.remove(
-    "hidden"
-  );
-
-
-  const textValue =
-    document.getElementById(
-      "textValue"
-    );
-
-
-  textValue.value =
-    element.innerText;
-
-
-  const color =
-    getComputedStyle(
-      element
-    ).color;
-
-
-  const hex =
-    rgbToHex(
-      color
-    );
-
-
-  const textColor =
-    document.getElementById(
-      "textColor"
-    );
-
-
-  const textColorText =
-    document.getElementById(
-      "textColorText"
-    );
-
-
-  textColor.value =
-    hex;
-
-
-  textColorText.value =
-    hex;
-
-
-  const size =
-    parseInt(
-      getComputedStyle(
-        element
-      ).fontSize,
-      10
-    ) || 16;
-
-
-  const fontSize =
-    document.getElementById(
-      "fontSize"
-    );
-
-
-  const fontSizeValue =
-    document.getElementById(
-      "fontSizeValue"
-    );
-
-
-  fontSize.value =
-    Math.min(
-      120,
-      Math.max(
-        10,
-        size
-      )
-    );
-
-
-  fontSizeValue.value =
-    `${size}px`;
-
-
-  updateFontWeightButtons(
-    getComputedStyle(
-      element
-    ).fontWeight
-  );
-
-
-  textValue.oninput =
-    () => {
-
-      pushHistory();
-
-      element.innerText =
-        textValue.value;
-
-      markChanged();
-
-    };
-
-
-  textColor.oninput =
-    () => {
-
-      pushHistory();
-
-      element.style.color =
-        textColor.value;
-
-      textColorText.value =
-        textColor.value;
-
-      markChanged();
-
-    };
-
-
-  textColorText.onchange =
-    () => {
-
-      const normalized =
-        normalizeHex(
-          textColorText.value
-        );
-
-      if (!normalized) {
-        return;
-      }
-
-      pushHistory();
-
-      element.style.color =
-        normalized;
-
-      textColor.value =
-        normalized;
-
-      markChanged();
-
-    };
-
-
-  fontSize.oninput =
-    () => {
-
-      pushHistory();
-
-      element.style.fontSize =
-        `${fontSize.value}px`;
-
-      fontSizeValue.value =
-        `${fontSize.value}px`;
-
-      markChanged();
-
-    };
-
-}
-
-
-/* =========================================================
-   CONTROLS
+   CONTROLS VISIBILITY
 ========================================================= */
 
 function hideAllControls() {
@@ -1986,13 +2370,863 @@ function hideAllControls() {
 }
 
 
-function updateFontWeightButtons(
+/* =========================================================
+   TEXT CONTROLS
+========================================================= */
+
+function setupTextControls(
+  element
+) {
+
+  hideAllControls();
+
+
+  textControls.classList.remove(
+    "hidden"
+  );
+
+
+  const textValue =
+    document.getElementById(
+      "textValue"
+    );
+
+
+  const textColor =
+    document.getElementById(
+      "textColor"
+    );
+
+
+  const textColorText =
+    document.getElementById(
+      "textColorText"
+    );
+
+
+  const fontSize =
+    document.getElementById(
+      "fontSize"
+    );
+
+
+  const fontSizeValue =
+    document.getElementById(
+      "fontSizeValue"
+    );
+
+
+  textValue.value =
+    element.innerText;
+
+
+  const computed =
+    getComputedStyle(
+      element
+    );
+
+
+  const color =
+    rgbToHex(
+      computed.color
+    );
+
+
+  textColor.value =
+    color;
+
+
+  textColorText.value =
+    color;
+
+
+  const currentSize =
+    parseInt(
+      computed.fontSize,
+      10
+    ) || 16;
+
+
+  fontSize.value =
+    Math.min(
+      120,
+      Math.max(
+        10,
+        currentSize
+      )
+    );
+
+
+  fontSizeValue.value =
+    `${currentSize}px`;
+
+
+  updateFontWeightButtons(
+    computed.fontWeight
+  );
+
+
+  /*
+    既存inputイベントを
+    一度リセット。
+  */
+
+  textValue.oninput =
+    null;
+
+  textColor.oninput =
+    null;
+
+  textColorText.onchange =
+    null;
+
+  fontSize.oninput =
+    null;
+
+
+  textValue.oninput =
+    () => {
+
+      if (
+        !selectedElement
+      ) {
+        return;
+      }
+
+
+      pushHistory();
+
+
+      const value =
+        textValue.value;
+
+
+      selectedElement.innerText =
+        value;
+
+
+      writeCmsValue(
+        selectedElement,
+        value
+      );
+
+
+      markChanged();
+
+    };
+
+
+  textColor.oninput =
+    () => {
+
+      if (
+        !selectedElement
+      ) {
+        return;
+      }
+
+
+      pushHistory();
+
+
+      selectedElement.style.color =
+        textColor.value;
+
+
+      textColorText.value =
+        textColor.value;
+
+
+      writeStyleValue(
+        selectedElement,
+        "color",
+        textColor.value
+      );
+
+
+      markChanged();
+
+    };
+
+
+  textColorText.onchange =
+    () => {
+
+      if (
+        !selectedElement
+      ) {
+        return;
+      }
+
+
+      const normalized =
+        normalizeHex(
+          textColorText.value
+        );
+
+
+      if (!normalized) {
+        return;
+      }
+
+
+      pushHistory();
+
+
+      selectedElement.style.color =
+        normalized;
+
+
+      textColor.value =
+        normalized;
+
+
+      writeStyleValue(
+        selectedElement,
+        "color",
+        normalized
+      );
+
+
+      markChanged();
+
+    };
+
+
+  fontSize.oninput =
+    () => {
+
+      if (
+        !selectedElement
+      ) {
+        return;
+      }
+
+
+      pushHistory();
+
+
+      const px =
+        `${fontSize.value}px`;
+
+
+      selectedElement.style.fontSize =
+        px;
+
+
+      fontSizeValue.value =
+        px;
+
+
+      writeStyleValue(
+        selectedElement,
+        "fontSize",
+        px
+      );
+
+
+      markChanged();
+
+    };
+
+}
+
+
+/* =========================================================
+   ELEMENT CONTROLS
+========================================================= */
+
+function setupElementControls(
+  element
+) {
+
+  hideAllControls();
+
+
+  colorControls.classList.remove(
+    "hidden"
+  );
+
+
+  linkControls.classList.remove(
+    "hidden"
+  );
+
+
+  if (
+    element.tagName ===
+    "IMG"
+  ) {
+
+    imageControls.classList.remove(
+      "hidden"
+    );
+
+  }
+
+
+  const backgroundColor =
+    document.getElementById(
+      "backgroundColor"
+    );
+
+
+  const backgroundColorText =
+    document.getElementById(
+      "backgroundColorText"
+    );
+
+
+  const computed =
+    getComputedStyle(
+      element
+    );
+
+
+  const background =
+    rgbToHex(
+      computed.backgroundColor
+    );
+
+
+  backgroundColor.value =
+    background;
+
+
+  backgroundColorText.value =
+    background;
+
+
+  backgroundColor.oninput =
+    () => {
+
+      if (
+        !selectedElement
+      ) {
+        return;
+      }
+
+
+      pushHistory();
+
+
+      selectedElement.style.backgroundColor =
+        backgroundColor.value;
+
+
+      backgroundColorText.value =
+        backgroundColor.value;
+
+
+      writeStyleValue(
+        selectedElement,
+        "backgroundColor",
+        backgroundColor.value
+      );
+
+
+      markChanged();
+
+    };
+
+
+  backgroundColorText.onchange =
+    () => {
+
+      if (
+        !selectedElement
+      ) {
+        return;
+      }
+
+
+      const normalized =
+        normalizeHex(
+          backgroundColorText.value
+        );
+
+
+      if (!normalized) {
+        return;
+      }
+
+
+      pushHistory();
+
+
+      selectedElement.style.backgroundColor =
+        normalized;
+
+
+      backgroundColor.value =
+        normalized;
+
+
+      writeStyleValue(
+        selectedElement,
+        "backgroundColor",
+        normalized
+      );
+
+
+      markChanged();
+
+    };
+
+
+  const linkValue =
+    document.getElementById(
+      "linkValue"
+    );
+
+
+  if (
+    element.tagName ===
+    "A"
+  ) {
+
+    linkValue.value =
+      element.getAttribute(
+        "href"
+      ) || "";
+
+  } else {
+
+    linkValue.value =
+      "";
+
+  }
+
+
+  linkValue.oninput =
+    () => {
+
+      if (
+        selectedElement &&
+        selectedElement.tagName ===
+          "A"
+      ) {
+
+        selectedElement.href =
+          linkValue.value;
+
+        writeCmsValue(
+          selectedElement,
+          linkValue.value,
+          "href"
+        );
+
+        markChanged();
+
+      }
+
+    };
+
+
+  const imageValue =
+    document.getElementById(
+      "imageValue"
+    );
+
+
+  if (
+    imageValue
+  ) {
+
+    if (
+      element.tagName ===
+      "IMG"
+    ) {
+
+      imageValue.value =
+        element.src;
+
+    } else {
+
+      imageValue.value =
+        "";
+
+    }
+
+
+    imageValue.oninput =
+      () => {
+
+        if (
+          selectedElement &&
+          selectedElement.tagName ===
+            "IMG"
+        ) {
+
+          selectedElement.src =
+            imageValue.value;
+
+          markChanged();
+
+        }
+
+      };
+
+  }
+
+}
+
+
+/* =========================================================
+   CMS PATH
+========================================================= */
+
+function parseCmsPath(
+  path
+) {
+
+  if (
+    typeof path !==
+      "string" ||
+    !path
+  ) {
+
+    return null;
+
+  }
+
+
+  return path
+    .split(".")
+    .map(
+      (part) => {
+
+        if (
+          /^[0-9]+$/.test(
+            part
+          )
+        ) {
+
+          return Number(
+            part
+          );
+
+        }
+
+        return part;
+
+      }
+    );
+
+}
+
+
+function getPathParent(
+  root,
+  pathParts
+) {
+
+  if (
+    !Array.isArray(pathParts) ||
+    !pathParts.length
+  ) {
+    return null;
+  }
+
+
+  let current =
+    root;
+
+
+  for (
+    let i = 0;
+    i < pathParts.length - 1;
+    i++
+  ) {
+
+    const key =
+      pathParts[i];
+
+
+    if (
+      current === null ||
+      current === undefined
+    ) {
+
+      return null;
+
+    }
+
+
+    if (
+      current[key] ===
+      undefined
+    ) {
+
+      current[key] =
+        typeof pathParts[i + 1] ===
+        "number"
+          ? []
+          : {};
+
+    }
+
+
+    current =
+      current[key];
+
+  }
+
+
+  return current;
+
+}
+
+
+function writeCmsValue(
+  element,
+  value,
+  propertyOverride = null
+) {
+
+  const path =
+    element.dataset.cmsPath;
+
+
+  if (!path) {
+
+    return;
+
+  }
+
+
+  const parts =
+    parseCmsPath(
+      path
+    );
+
+
+  if (
+    !parts ||
+    !parts.length
+  ) {
+
+    return;
+
+  }
+
+
+  const parent =
+    getPathParent(
+      siteData,
+      parts
+    );
+
+
+  if (!parent) {
+
+    return;
+
+  }
+
+
+  const finalKey =
+    propertyOverride ||
+    parts[
+      parts.length - 1
+    ];
+
+
+  parent[finalKey] =
+    value;
+
+}
+
+
+/* =========================================================
+   STYLE STORAGE
+========================================================= */
+
+function writeStyleValue(
+  element,
+  property,
   value
+) {
+
+  /*
+    site-data.json に style 情報を
+    保存できるようにする。
+
+    例:
+    projects.0.style.color
+  */
+
+  const cmsPath =
+    element.dataset.cmsPath;
+
+
+  if (!cmsPath) {
+    return;
+  }
+
+
+  const parts =
+    parseCmsPath(
+      cmsPath
+    );
+
+
+  if (
+    !parts ||
+    !parts.length
+  ) {
+    return;
+  }
+
+
+  let base =
+    siteData;
+
+
+  for (
+    const part of parts
+  ) {
+
+    if (
+      base[part] ===
+      undefined
+    ) {
+
+      base[part] =
+        {};
+
+    }
+
+
+    base =
+      base[part];
+
+  }
+
+
+  /*
+    最後の値が文字列なら
+    その親要素へ style を追加。
+  */
+
+  const parent =
+    getPathParent(
+      siteData,
+      parts
+    );
+
+
+  if (
+    !parent ||
+    !isObject(parent[
+      parts[
+        parts.length - 1
+      ]
+    ])
+  ) {
+
+    /*
+      CMS項目そのものが文字列なので、
+      その横に保存するための
+      _style オブジェクトを使う。
+    */
+
+    const key =
+      parts[
+        parts.length - 1
+      ];
+
+
+    if (
+      isObject(
+        parent[
+          `${String(key)}Style`
+        ]
+      )
+    ) {
+
+      parent[
+        `${String(key)}Style`
+      ][
+        property
+      ] =
+        value;
+
+    } else {
+
+      parent[
+        `${String(key)}Style`
+      ] =
+        {
+          [property]:
+            value
+        };
+
+    }
+
+
+    return;
+
+  }
+
+
+  const target =
+    parent[
+      parts[
+        parts.length - 1
+      ]
+    ];
+
+
+  if (
+    !isObject(
+      target.style
+    )
+  ) {
+
+    target.style =
+      {};
+
+  }
+
+
+  target.style[
+    property
+  ] =
+    value;
+
+}
+
+
+/* =========================================================
+   CHANGED
+========================================================= */
+
+function markChanged() {
+
+  hasChanges =
+    true;
+
+
+  setSaveStatus(
+    "dirty",
+    "未保存の変更"
+  );
+
+}
+
+
+/* =========================================================
+   FONT WEIGHT
+========================================================= */
+
+function updateFontWeightButtons(
+  current
 ) {
 
   const numeric =
     Number(
-      value
+      current
     ) || 400;
 
 
@@ -2001,7 +3235,9 @@ function updateFontWeightButtons(
       "[data-font-weight]"
     )
     .forEach(
-      (button) => {
+      (
+        button
+      ) => {
 
         button.classList.toggle(
           "active",
@@ -2017,28 +3253,39 @@ function updateFontWeightButtons(
 
 
 /* =========================================================
-   CHANGES
+   COLOR
 ========================================================= */
 
-function markChanged() {
-
-  hasChanges =
-    true;
-
-  setSaveStatus(
-    "dirty",
-    "未保存の変更"
-  );
-
-}
-
-
 function rgbToHex(
-  rgb
+  value
 ) {
 
+  if (
+    typeof value !==
+    "string"
+  ) {
+
+    return "#111318";
+
+  }
+
+
+  if (
+    value.startsWith("#")
+  ) {
+
+    return (
+      normalizeHex(
+        value
+      ) ||
+      "#111318"
+    );
+
+  }
+
+
   const match =
-    rgb.match(
+    value.match(
       /\d+/g
     );
 
@@ -2061,9 +3308,11 @@ function rgbToHex(
         3
       )
       .map(
-        (value) =>
+        (
+          number
+        ) =>
           Number(
-            value
+            number
           )
             .toString(16)
             .padStart(
@@ -2083,9 +3332,9 @@ function normalizeHex(
 
   const v =
     String(
-      value || ""
-    )
-      .trim();
+      value ||
+      ""
+    ).trim();
 
 
   if (
@@ -2108,11 +3357,15 @@ function normalizeHex(
     return (
       "#" +
       v
-        .slice(1)
+        .slice(
+          1
+        )
         .split("")
         .map(
-          (x) =>
-            x + x
+          (
+            char
+          ) =>
+            char + char
         )
         .join("")
     ).toLowerCase();
@@ -2133,23 +3386,28 @@ function positionFloatingToolbar(
   element
 ) {
 
-  const toolbar =
-    document.getElementById(
-      "floatingToolbar"
-    );
+  if (
+    !floatingToolbar
+  ) {
+    return;
+  }
+
+
+  floatingToolbar.classList.remove(
+    "hidden"
+  );
 
 
   const rect =
     element.getBoundingClientRect();
 
 
-  toolbar.classList.remove(
-    "hidden"
-  );
-
-
   const width =
-    toolbar.offsetWidth;
+    floatingToolbar.offsetWidth;
+
+
+  const height =
+    floatingToolbar.offsetHeight;
 
 
   const left =
@@ -2164,20 +3422,28 @@ function positionFloatingToolbar(
     );
 
 
-  const top =
-    Math.max(
-      10,
-      rect.top -
-        toolbar.offsetHeight -
-        10
-    );
+  let top =
+    rect.top -
+    height -
+    10;
 
 
-  toolbar.style.left =
+  if (
+    top < 10
+  ) {
+
+    top =
+      rect.bottom +
+      10;
+
+  }
+
+
+  floatingToolbar.style.left =
     `${left}px`;
 
 
-  toolbar.style.top =
+  floatingToolbar.style.top =
     `${top}px`;
 
 }
@@ -2190,8 +3456,31 @@ function positionFloatingToolbar(
 async function saveSite() {
 
   if (!siteData) {
+
     return;
+
   }
+
+
+  /*
+    保存直前にも認証を確認。
+  */
+
+  if (
+    !isAdminAuthenticated()
+  ) {
+
+    window.location.replace(
+      ADMIN_PAGE_URL
+    );
+
+    return;
+
+  }
+
+
+  const token =
+    getAdminToken();
 
 
   setSaveStatus(
@@ -2202,37 +3491,21 @@ async function saveSite() {
 
   try {
 
-    const token =
-      localStorage.getItem(
-        "adminSessionToken"
-      ) ||
-      localStorage.getItem(
-        "admin_token"
-      );
-
-
-    if (!token) {
-
-      throw new Error(
-        "Adminセッションがありません"
-      );
-
-    }
-
-
     const response =
       await fetch(
-        "https://maru-website-api.maru-0727.workers.dev/admin/save",
+        `${WORKER_URL}/admin/save`,
         {
           method:
             "POST",
 
           headers: {
+
             "Content-Type":
               "application/json",
 
             "Authorization":
               `Bearer ${token}`
+
           },
 
           body:
@@ -2240,22 +3513,63 @@ async function saveSite() {
               file:
                 "site-data.json",
 
-              siteData
+              siteData:
+                siteData
+
             })
 
         }
       );
 
 
-    const result =
-      await response.json();
+    let result =
+      null;
 
 
-    if (!response.ok) {
+    try {
+
+      result =
+        await response.json();
+
+    } catch {
+
+      result =
+        null;
+
+    }
+
+
+    if (
+      !response.ok
+    ) {
+
+      if (
+        response.status ===
+        401
+      ) {
+
+        sessionStorage.removeItem(
+          "maru_admin_token"
+        );
+
+        sessionStorage.removeItem(
+          "maru_admin_expires"
+        );
+
+
+        window.location.replace(
+          ADMIN_PAGE_URL
+        );
+
+
+        return;
+
+      }
+
 
       throw new Error(
-        result.message ||
-        "保存に失敗しました"
+        result?.message ||
+        `保存に失敗しました (HTTP ${response.status})`
       );
 
     }
@@ -2271,9 +3585,12 @@ async function saveSite() {
     );
 
 
-  } catch (error) {
+  } catch (
+    error
+  ) {
 
     console.error(
+      "[Editor] save error",
       error
     );
 
@@ -2294,96 +3611,30 @@ async function saveSite() {
 
 
 /* =========================================================
-   EVENTS
+   IMAGE / ELEMENT TOOLBAR
 ========================================================= */
 
-document
-  .getElementById(
-    "undoButton"
-  )
-  .addEventListener(
-    "click",
-    undo
+const editTextQuickButton =
+  document.getElementById(
+    "editTextQuickButton"
+  );
+
+const editColorQuickButton =
+  document.getElementById(
+    "editColorQuickButton"
+  );
+
+const editLinkQuickButton =
+  document.getElementById(
+    "editLinkQuickButton"
   );
 
 
-document
-  .getElementById(
-    "redoButton"
-  )
-  .addEventListener(
-    "click",
-    redo
-  );
+if (
+  editTextQuickButton
+) {
 
-
-document
-  .getElementById(
-    "saveButton"
-  )
-  .addEventListener(
-    "click",
-    () => {
-
-      document
-        .getElementById(
-          "saveModal"
-        )
-        .classList.remove(
-          "hidden"
-        );
-
-    }
-  );
-
-
-document
-  .getElementById(
-    "cancelSaveButton"
-  )
-  .addEventListener(
-    "click",
-    () => {
-
-      document
-        .getElementById(
-          "saveModal"
-        )
-        .classList.add(
-          "hidden"
-        );
-
-    }
-  );
-
-
-document
-  .getElementById(
-    "confirmSaveButton"
-  )
-  .addEventListener(
-    "click",
-    async () => {
-
-      document
-        .getElementById(
-          "saveModal"
-        )
-        .classList.add(
-          "hidden"
-        );
-
-      await saveSite();
-
-    }
-  );
-
-
-document
-  .getElementById(
-    "closePropertyButton"
-  )
-  .addEventListener(
+  editTextQuickButton.addEventListener(
     "click",
     () => {
 
@@ -2391,45 +3642,297 @@ document
         selectedElement
       ) {
 
-        selectedElement.classList.remove(
-          "editor-selected"
+        showPropertyPanel(
+          selectedElement
         );
+
+        const textValue =
+          document.getElementById(
+            "textValue"
+          );
+
+        if (
+          textValue
+        ) {
+
+          textValue.focus();
+
+        }
 
       }
-
-
-      selectedElement =
-        null;
-
-
-      propertyEmpty.classList.remove(
-        "hidden"
-      );
-
-      propertyContent.classList.add(
-        "hidden"
-      );
-
-
-      document
-        .getElementById(
-          "floatingToolbar"
-        )
-        .classList.add(
-          "hidden"
-        );
 
     }
   );
 
+}
 
-document
-  .getElementById(
-    "backButton"
-  )
-  .addEventListener(
+
+if (
+  editColorQuickButton
+) {
+
+  editColorQuickButton.addEventListener(
     "click",
     () => {
+
+      if (
+        selectedElement
+      ) {
+
+        const colorInput =
+          document.getElementById(
+            selectedElement.dataset.editorText !==
+              undefined
+              ? "textColor"
+              : "backgroundColor"
+          );
+
+
+        if (
+          colorInput
+        ) {
+
+          colorInput.click();
+
+        }
+
+      }
+
+    }
+  );
+
+}
+
+
+if (
+  editLinkQuickButton
+) {
+
+  editLinkQuickButton.addEventListener(
+    "click",
+    () => {
+
+      if (
+        !selectedElement
+      ) {
+        return;
+      }
+
+
+      const linkValue =
+        document.getElementById(
+          "linkValue"
+        );
+
+
+      if (
+        linkValue
+      ) {
+
+        linkValue.focus();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   SAVE EVENTS
+========================================================= */
+
+const saveButton =
+  document.getElementById(
+    "saveButton"
+  );
+
+const saveModal =
+  document.getElementById(
+    "saveModal"
+  );
+
+const cancelSaveButton =
+  document.getElementById(
+    "cancelSaveButton"
+  );
+
+const confirmSaveButton =
+  document.getElementById(
+    "confirmSaveButton"
+  );
+
+
+if (
+  saveButton
+) {
+
+  saveButton.addEventListener(
+    "click",
+    () => {
+
+      if (
+        !hasChanges
+      ) {
+
+        setSaveStatus(
+          "saved",
+          "変更はありません"
+        );
+
+        return;
+
+      }
+
+
+      saveModal.classList.remove(
+        "hidden"
+      );
+
+    }
+  );
+
+}
+
+
+if (
+  cancelSaveButton
+) {
+
+  cancelSaveButton.addEventListener(
+    "click",
+    () => {
+
+      saveModal.classList.add(
+        "hidden"
+      );
+
+    }
+  );
+
+}
+
+
+if (
+  confirmSaveButton
+) {
+
+  confirmSaveButton.addEventListener(
+    "click",
+    async () => {
+
+      saveModal.classList.add(
+        "hidden"
+      );
+
+      await saveSite();
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   UNDO / REDO
+========================================================= */
+
+const undoButton =
+  document.getElementById(
+    "undoButton"
+  );
+
+const redoButton =
+  document.getElementById(
+    "redoButton"
+  );
+
+
+if (
+  undoButton
+) {
+
+  undoButton.addEventListener(
+    "click",
+    undo
+  );
+
+}
+
+
+if (
+  redoButton
+) {
+
+  redoButton.addEventListener(
+    "click",
+    redo
+  );
+
+}
+
+
+/* =========================================================
+   CLOSE PROPERTY
+========================================================= */
+
+const closePropertyButton =
+  document.getElementById(
+    "closePropertyButton"
+  );
+
+
+if (
+  closePropertyButton
+) {
+
+  closePropertyButton.addEventListener(
+    "click",
+    () => {
+
+      clearSelection();
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   BACK TO ADMIN
+========================================================= */
+
+const backButton =
+  document.getElementById(
+    "backButton"
+  );
+
+
+if (
+  backButton
+) {
+
+  backButton.addEventListener(
+    "click",
+    () => {
+
+      if (
+        hasChanges
+      ) {
+
+        const leave =
+          confirm(
+            "保存していない変更があります。Adminへ戻りますか？"
+          );
+
+
+        if (!leave) {
+          return;
+        }
+
+      }
+
 
       window.location.href =
         "../admin/panel.html";
@@ -2437,63 +3940,155 @@ document
     }
   );
 
-
-/* font weight */
-
-document
-  .querySelectorAll(
-    "[data-font-weight]"
-  )
-  .forEach(
-    (button) => {
-
-      button.addEventListener(
-        "click",
-        () => {
-
-          if (
-            !selectedElement
-          ) {
-            return;
-          }
+}
 
 
-          pushHistory();
+/* =========================================================
+   PREVIEW BUTTON
+========================================================= */
+
+const previewButton =
+  document.getElementById(
+    "previewButton"
+  );
 
 
-          selectedElement.style.fontWeight =
-            button.dataset.fontWeight;
+if (
+  previewButton
+) {
 
+  previewButton.addEventListener(
+    "click",
+    () => {
 
-          updateFontWeightButtons(
-            button.dataset.fontWeight
-          );
-
-
-          markChanged();
-
-        }
+      window.open(
+        "../index.html",
+        "_blank",
+        "noopener,noreferrer"
       );
 
     }
   );
 
+}
+
 
 /* =========================================================
-   KEYBOARD
+   HELPERS
+========================================================= */
+
+function getEditorScopedCSS() {
+
+  /*
+    Editor内で公開ページCSSを
+    そのまま使う。
+
+    今は外部style.cssを直接リンクせず、
+    既存ページとの競合を減らす。
+  */
+
+  return `
+
+    @import url("../style.css");
+
+    /*
+      Editorの選択UI
+    */
+
+    .editor-selected {
+      outline:
+        2px solid
+        #111318 !important;
+
+      outline-offset:
+        5px !important;
+
+      box-shadow:
+        0 0 0 5px
+        rgba(17,19,24,.10)
+        !important;
+
+      cursor:
+        pointer !important;
+    }
+
+
+    .editor-hover {
+      outline:
+        1px dashed
+        #858b94 !important;
+
+      outline-offset:
+        4px !important;
+
+      cursor:
+        pointer !important;
+    }
+
+
+    .website-page
+    a {
+      cursor:
+        pointer;
+    }
+
+
+    .website-page
+    [data-editor-ignore] {
+      cursor:
+        default;
+    }
+
+  `;
+
+}
+
+
+/* =========================================================
+   UNSAVED WARNING
+========================================================= */
+
+window.addEventListener(
+  "beforeunload",
+  (event) => {
+
+    if (
+      !hasChanges
+    ) {
+      return;
+    }
+
+
+    event.preventDefault();
+
+    event.returnValue =
+      "";
+
+  }
+);
+
+
+/* =========================================================
+   KEYBOARD SHORTCUTS
 ========================================================= */
 
 document.addEventListener(
   "keydown",
   (event) => {
 
+    const modifier =
+      event.ctrlKey ||
+      event.metaKey;
+
+
     if (
-      event.ctrlKey &&
+      modifier &&
       event.key.toLowerCase() ===
         "z"
     ) {
 
       event.preventDefault();
+
 
       if (
         event.shiftKey
@@ -2507,11 +4102,14 @@ document.addEventListener(
 
       }
 
+
+      return;
+
     }
 
 
     if (
-      event.ctrlKey &&
+      modifier &&
       event.key.toLowerCase() ===
         "y"
     ) {
@@ -2519,6 +4117,31 @@ document.addEventListener(
       event.preventDefault();
 
       redo();
+
+      return;
+
+    }
+
+
+    if (
+      modifier &&
+      event.key.toLowerCase() ===
+        "s"
+    ) {
+
+      event.preventDefault();
+
+
+      if (
+        hasChanges
+      ) {
+
+        saveSite();
+
+      }
+
+
+      return;
 
     }
 
@@ -2528,11 +4151,7 @@ document.addEventListener(
       "Escape"
     ) {
 
-      document
-        .getElementById(
-          "closePropertyButton"
-        )
-        .click();
+      clearSelection();
 
     }
 
@@ -2541,7 +4160,75 @@ document.addEventListener(
 
 
 /* =========================================================
-   START
+   FLOATING TOOLBAR POSITION
 ========================================================= */
 
-loadSiteData();
+window.addEventListener(
+  "scroll",
+  () => {
+
+    if (
+      selectedElement
+    ) {
+
+      positionFloatingToolbar(
+        selectedElement
+      );
+
+    }
+
+  },
+  true
+);
+
+
+window.addEventListener(
+  "resize",
+  () => {
+
+    if (
+      selectedElement
+    ) {
+
+      positionFloatingToolbar(
+        selectedElement
+      );
+
+    }
+
+  }
+);
+
+
+/* =========================================================
+   AUTH + INIT
+========================================================= */
+
+async function initEditor() {
+
+  /*
+    ここが最重要。
+
+    Editorへ直接URLでアクセスしても、
+    Adminログイン済みでなければ
+    一切編集画面を使わせない。
+  */
+
+  if (
+    !requireAdminAuth()
+  ) {
+
+    return;
+
+  }
+
+
+  updateHistoryButtons();
+
+
+  await loadSiteData();
+
+}
+
+
+initEditor();
