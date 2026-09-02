@@ -27,6 +27,13 @@
       "href": "https://github.com/maru-m4ru-maru",
       "enabled": true,
       "newTab": true
+    },
+    {
+      "id": "nav-mtjkb0j9-ez8vkm",
+      "label": "Scratchのプロフィール",
+      "href": "https://scratch.mit.edu/users/maru_m4ru_maru/",
+      "enabled": true,
+      "newTab": true
     }
   ],
   "stats": [
@@ -113,15 +120,7 @@
       "enabled": true
     }
   ],
-  "links": [
-    {
-      "id": "link-mtjbrnf6-pwj3mg",
-      "label": "Scratchのプロフィールです。",
-      "url": "https://scratch.mit.edu/users/maru_m4ru_maru/",
-      "newTab": true,
-      "enabled": true
-    }
-  ],
+  "links": [],
   "sections": [
     {
       "id": "section-hero",
