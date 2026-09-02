@@ -119,16 +119,7 @@
       "enabled": true
     }
   ],
-  "embeds": [
-    {
-      "id": "embed-mtjbshb0-w6ihob",
-      "title": "新しい埋め込み",
-      "url": "",
-      "width": "100%",
-      "height": "420",
-      "enabled": true
-    }
-  ],
+  "embeds": [],
   "links": [],
   "sections": [
     {
