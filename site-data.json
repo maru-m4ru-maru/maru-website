@@ -115,7 +115,7 @@
       "description": "maru_m4ru_maru が制作しているツール・サービス・プロジェクトを紹介しています。",
       "enabled": true,
       "titleStyle": {
-        "fontSize": "80px",
+        "fontSize": "79px",
         "color": "#000b42"
       }
     },
