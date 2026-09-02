@@ -75,6 +75,21 @@
       "icon": "MA",
       "featured": true,
       "enabled": true
+    },
+    {
+      "id": "project-mtjjywxr-a5f1hy",
+      "title": "Scratch Project Analyzer",
+      "description": "Scratchのプロジェクトのファイル、JSON、IDを入力するとそのプロジェクトのジャンルを判定し、使われているブロックをランキングにして表示してくれます。",
+      "status": "ONLINE",
+      "tags": [
+        "Tools",
+        "Scratch"
+      ],
+      "url": "https://maru-m4ru-maru.github.io/Scratch-project-analyzer/",
+      "github": "https://github.com/maru-m4ru-maru/Scratch-project-analyzer",
+      "icon": "MA",
+      "featured": false,
+      "enabled": true
     }
   ],
   "updates": [
