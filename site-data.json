@@ -161,7 +161,7 @@
   "pages": [
     {
       "id": "page-mtlpcx4g-3wsjhv",
-      "title": "新しいページ",
+      "title": "TEST",
       "slug": "new-page",
       "description": "",
       "navLabel": "新しいページ",
@@ -183,13 +183,13 @@
         }
       ],
       "seo": {
-        "title": "",
-        "description": "",
+        "title": "TEST",
+        "description": "TEST",
         "ogImage": "",
         "noindex": false
       },
       "createdAt": "2026-09-03T15:51:20.753Z",
-      "updatedAt": "2026-09-03T15:51:20.753Z"
+      "updatedAt": "2026-09-03T15:51:48.904Z"
     }
   ],
   "settings": {
