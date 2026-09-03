@@ -158,40 +158,7 @@
       "enabled": true
     }
   ],
-  "pages": [
-    {
-      "id": "page-mtlpcx4g-3wsjhv",
-      "title": "TEST",
-      "slug": "new-page",
-      "description": "",
-      "navLabel": "新しいページ",
-      "showInNavigation": false,
-      "enabled": false,
-      "status": "draft",
-      "sections": [
-        {
-          "type": "hero",
-          "title": "こんにちは！",
-          "description": "",
-          "enabled": true
-        },
-        {
-          "type": "text",
-          "title": "新しいセクション",
-          "description": "",
-          "enabled": true
-        }
-      ],
-      "seo": {
-        "title": "TEST",
-        "description": "TEST",
-        "ogImage": "",
-        "noindex": false
-      },
-      "createdAt": "2026-09-03T15:51:20.753Z",
-      "updatedAt": "2026-09-03T15:51:48.904Z"
-    }
-  ],
+  "pages": [],
   "settings": {
     "showFooter": true,
     "showGitHubCTA": true,
