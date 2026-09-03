@@ -158,6 +158,7 @@
       "enabled": true
     }
   ],
+  "pages": [],
   "settings": {
     "showFooter": true,
     "showGitHubCTA": true,
