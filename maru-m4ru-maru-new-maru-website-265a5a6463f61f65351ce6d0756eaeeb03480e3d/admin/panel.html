@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>管理パネル - maru_website</title>
 <link rel="stylesheet" href="./admin.css">
+<link rel="stylesheet" href="./pro-cms.css">
 </head>
 <body>
 <div class="app">
@@ -35,18 +36,20 @@
 <aside class="preview"><div class="preview-header"><div><strong>ライブプレビュー</strong><span>LIVE</span></div><button id="refreshPreviewButton" class="icon-button" type="button" title="プレビューを更新">↻</button></div><div class="preview-window"><div class="preview-browser"><span></span><span></span><span></span><div class="preview-url">maru-m4ru-maru.github.io/maru-website</div></div><div id="previewContent" class="preview-content"></div></div></aside>
 </div>
 <div id="helpModal" class="modal hidden"><div class="modal-backdrop"></div><div class="modal-card"><div class="modal-header"><div><span class="modal-kicker">ADMIN GUIDE</span><h2>操作説明</h2></div><button id="closeHelpButton" class="icon-button" type="button" aria-label="閉じる">×</button></div><div class="help-grid">
-<div class="help-item"><strong>サイト</strong><p>サイト名、説明、アイコン、GitHubリンクなどを変更できます。</p></div>
-<div class="help-item"><strong>ページ</strong><p>独立ページを作成し、URL、公開状態、ナビゲーション、ページ内セクションを管理できます。</p></div>
-<div class="help-item"><strong>セクション</strong><p>ホームページに表示するセクションを追加・削除・並び替えできます。</p></div>
-<div class="help-item"><strong>プロジェクト</strong><p>プロジェクトカードを追加・編集できます。</p></div>
-<div class="help-item"><strong>更新情報</strong><p>アップデート情報を追加・編集できます。</p></div>
-<div class="help-item"><strong>リンク</strong><p>ボタンやリンクとして使うURLを管理できます。</p></div>
-<div class="help-item"><strong>埋め込み</strong><p>URLを指定してiframe形式の外部コンテンツを追加できます。</p></div>
-<div class="help-item"><strong>ナビゲーション</strong><p>サイト上部のメニューを管理できます。</p></div>
-<div class="help-item"><strong>保存</strong><p>保存するとCloudflare Worker経由でGitHubへ反映されます。</p></div>
-<div class="help-item"><strong>ホームを編集</strong><p>公開ページを見ながら、文字・色・リンクなどを直感的に編集できます。</p></div>
+<div class="help-item"><strong>ページ</strong><p>ページビルダーでブロックを並べ、下書き・公開・SEOまで管理できます。</p></div>
+<div class="help-item"><strong>メディア</strong><p>画像URLと代替テキストをライブラリとして整理し、再利用できます。</p></div>
+<div class="help-item"><strong>履歴</strong><p>保存時のスナップショットを残し、過去の状態へ復元できます。</p></div>
+<div class="help-item"><strong>デザイン</strong><p>アクセント色、背景、角丸、最大幅などのデザイントークンを編集できます。</p></div>
+<div class="help-item"><strong>SEO</strong><p>サイト全体のタイトル補助、説明、Robots、OGP画像を設定できます。</p></div>
+<div class="help-item"><strong>Undo / Redo</strong><p>Ctrl+Z / Ctrl+Y、またはダッシュボードのボタンで編集を戻せます。</p></div>
+<div class="help-item"><strong>下書き</strong><p>編集内容はブラウザのローカルにも自動保存され、次回アクセス時に復元を確認できます。</p></div>
+<div class="help-item"><strong>保存</strong><p>保存すると既存のCloudflare Worker経由でGitHubへ反映されます。</p></div>
+<div class="help-item"><strong>ナビゲーション</strong><p>通常リンクに加えて、公開CMSページをメニューへ追加できます。</p></div>
+<div class="help-item"><strong>ホームを編集</strong><p>既存のホーム編集機能もそのまま利用できます。</p></div>
 </div></div></div>
 <script src="./admin.js"></script>
 <script src="./pages.js"></script>
+<script src="./pro-cms.js"></script>
+<script src="./revision-hook.js"></script>
 </body>
 </html>
