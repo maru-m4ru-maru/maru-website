@@ -69,7 +69,7 @@
   "projects": [
     {
       "id": "project-addons",
-      "title": "まる Addons",
+      "title": "MARU Addons",
       "description": "Scratch / TurboWarp をより便利にするためのツールです。\nもちろんオープンソースなので気軽に使ってね。\n詳しくは下のサイト開いてね。",
       "status": "ONLINE",
       "tags": [
@@ -77,7 +77,7 @@
         "JavaScript",
         "TurboWarp"
       ],
-      "url": "https://maru-scratch-addon.maru-0727.workers.dev/",
+      "url": "https://maru-m4ru-maru.github.io/maru-addons/",
       "github": "https://github.com/maru-m4ru-maru/maru-addons",
       "icon": "MA",
       "featured": true,
@@ -86,7 +86,7 @@
     {
       "id": "project-mtjk7icb-z0k7z3",
       "title": "Scratch Project Analyzer",
-      "description": "Scratchのプロジェクトのファイル、JSON、プロジェクトIDを入力すると、そのコードを読み取り、ジャンルと使われているブロックをランキングにして表示します。",
+      "description": "Scratchのプロジェクトのファイル、JSON、プロジェクトIDを入力すると、そのコードを読み取り、ジャンルと使われているブロックをランキングにして表示します✨️",
       "status": "ONLINE",
       "tags": [
         "Tools",
