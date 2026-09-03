@@ -40,12 +40,9 @@
     {
       "id": "stat-featured",
       "label": "Featured",
-      "value": "MARU Addons",
+      "value": "まる Addons",
       "meta": "Scratch enhancement",
-      "enabled": true,
-      "valueStyle": {
-        "color": "#000000"
-      }
+      "enabled": true
     },
     {
       "id": "stat-version",
@@ -72,7 +69,7 @@
   "projects": [
     {
       "id": "project-addons",
-      "title": "MARU Addons",
+      "title": "まる Addons",
       "description": "Scratch / TurboWarp をより便利にするためのツールです。\nもちろんオープンソースなので気軽に使ってね。\n詳しくは下のサイト開いてね。",
       "status": "ONLINE",
       "tags": [
