@@ -68,23 +68,6 @@
   ],
   "projects": [
     {
-      "id": "project-addons",
-      "title": "MARU Addons",
-      "description": "Scratch / TurboWarp をより便利にするためのツールです。\nもちろんオープンソースなので気軽に使ってね。\n詳しくは下のサイト開いてね。",
-      "status": "ONLINE",
-      "tags": [
-        "Scratch",
-        "JavaScript",
-        "TurboWarp"
-      ],
-      "url": "https://maru-m4ru-maru.github.io/maru-addons/",
-      "github": "https://github.com/maru-m4ru-maru/maru-addons",
-      "icon": "MA",
-      "featured": true,
-      "enabled": true,
-      "color": "#ffe1ad"
-    },
-    {
       "id": "project-mtnh6p3u-i31o0z",
       "title": "Code Nest",
       "description": "Webサイトやツールを自由に制作できる、プログラミング環境です。作った作品はプレビューで見ることができ、共有することもできます。",
@@ -100,6 +83,23 @@
       "featured": true,
       "enabled": true,
       "color": "#468a9b"
+    },
+    {
+      "id": "project-addons",
+      "title": "MARU Addons",
+      "description": "Scratch / TurboWarp をより便利にするためのツールです。\nもちろんオープンソースなので気軽に使ってね。\n詳しくは下のサイト開いてね。",
+      "status": "ONLINE",
+      "tags": [
+        "Scratch",
+        "JavaScript",
+        "TurboWarp"
+      ],
+      "url": "https://maru-m4ru-maru.github.io/maru-addons/",
+      "github": "https://github.com/maru-m4ru-maru/maru-addons",
+      "icon": "MA",
+      "featured": true,
+      "enabled": true,
+      "color": "#ffe1ad"
     },
     {
       "id": "project-mtjk7icb-z0k7z3",
