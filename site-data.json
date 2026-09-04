@@ -97,6 +97,22 @@
       "icon": "MA",
       "featured": false,
       "enabled": true
+    },
+    {
+      "id": "project-mtnh6p3u-i31o0z",
+      "title": "Code Nest",
+      "description": "Webサイトやツールを自由に制作できる、プログラミング環境です。作った作品はプレビューで見ることができ、共有することもできます。",
+      "status": "ONLINE",
+      "tags": [
+        "Python",
+        "web",
+        "ツール"
+      ],
+      "url": "https://maru-m4ru-maru.github.io/code-nest/index.html",
+      "github": "https://github.com/maru-m4ru-maru/code-nest",
+      "icon": "MA",
+      "featured": true,
+      "enabled": true
     }
   ],
   "updates": [
