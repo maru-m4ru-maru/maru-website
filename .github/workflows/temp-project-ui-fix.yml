@@ -1,0 +1,294 @@
+name: Temporary Project UI Fix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-project-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch project editor and cards
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          admin = Path("admin/admin.js")
+          main = Path("main.js")
+          css = Path("admin/admin.css")
+          workflow = Path(".github/workflows/temp-project-ui-fix.yml")
+
+          admin_text = admin.read_text(encoding="utf-8")
+          main_text = main.read_text(encoding="utf-8")
+          css_text = css.read_text(encoding="utf-8")
+
+          old_item_class = '''      item.className =
+        "editor-item";'''
+          new_item_class = '''      item.className =
+        "editor-item project-editor-item";
+      item.draggable = true;
+      item.dataset.projectIndex = String(index);'''
+          if old_item_class not in admin_text:
+              raise SystemExit("admin.js: project item anchor not found")
+          admin_text = admin_text.replace(old_item_class, new_item_class, 1)
+
+          old_item_html = '''        <div class="drag-handle">
+          ◆
+        </div>'''
+          new_item_html = '''        <div class="drag-handle project-drag-handle" title="ドラッグして並べ替え">
+          ☰
+        </div>'''
+          if old_item_html not in admin_text:
+              raise SystemExit("admin.js: project drag handle anchor not found")
+          admin_text = admin_text.replace(old_item_html, new_item_html, 1)
+
+          old_actions_anchor = '''        <div class="item-actions">
+
+          <button
+            class="toggleProject"'''
+          new_actions_anchor = '''        <div class="project-color-control">
+          <button class="project-color-swatch" type="button" title="カードの色を変更" style="background:${escapeHtml(project.color || "#ffffff")}"></button>
+          <input class="project-color-input" type="color" value="${escapeHtml(project.color || "#ffffff")}" aria-label="カードの色">
+        </div>
+
+        <div class="item-actions">
+
+          <button
+            class="toggleProject"'''
+          if old_actions_anchor not in admin_text:
+              raise SystemExit("admin.js: project actions anchor not found")
+          admin_text = admin_text.replace(old_actions_anchor, new_actions_anchor, 1)
+
+          old_after_delete = '''      item
+        .querySelector(
+          ".deleteProject"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            if (
+              !confirm(
+                `「${project.title}」を削除しますか？`
+              )
+            ) {
+              return;
+            }
+
+
+            projects.splice(
+              index,
+              1
+            );
+
+
+            markDirty();
+
+            renderProjects();
+
+            renderPreview();
+
+          }
+        );
+
+
+      list.appendChild(item);'''
+          new_after_delete = '''      item
+        .querySelector(
+          ".deleteProject"
+        )
+        .addEventListener(
+          "click",
+          () => {
+
+            if (
+              !confirm(
+                `「${project.title}」を削除しますか？`
+              )
+            ) {
+              return;
+            }
+
+
+            projects.splice(
+              index,
+              1
+            );
+
+
+            markDirty();
+
+            renderProjects();
+
+            renderPreview();
+
+          }
+        );
+
+
+      const colorInput =
+        item.querySelector(".project-color-input");
+      const colorSwatch =
+        item.querySelector(".project-color-swatch");
+
+      const applyProjectColor = (value) => {
+        const color =
+          /^#[0-9a-fA-F]{6}$/.test(value)
+            ? value
+            : "#ffffff";
+        project.color = color;
+        colorInput.value = color;
+        colorSwatch.style.background = color;
+        markDirty();
+        renderPreview();
+      };
+
+      colorSwatch.addEventListener("click", () => {
+        if (typeof colorInput.showPicker === "function") {
+          colorInput.showPicker();
+        } else {
+          colorInput.click();
+        }
+      });
+
+      colorInput.addEventListener("input", (event) => {
+        applyProjectColor(event.target.value);
+      });
+
+      colorInput.addEventListener("click", (event) => {
+        event.stopPropagation();
+      });
+
+      item.addEventListener("dragstart", (event) => {
+        if (event.target.closest("button, input, a, textarea, select")) {
+          event.preventDefault();
+          return;
+        }
+        item.classList.add("dragging");
+        event.dataTransfer.effectAllowed = "move";
+        event.dataTransfer.setData("text/plain", String(index));
+      });
+
+      item.addEventListener("dragend", () => {
+        item.classList.remove("dragging");
+        list.querySelectorAll(".drag-over").forEach((element) => {
+          element.classList.remove("drag-over");
+        });
+      });
+
+      item.addEventListener("dragover", (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = "move";
+        const dragging = list.querySelector(".dragging");
+        if (!dragging || dragging === item) return;
+        list.querySelectorAll(".drag-over").forEach((element) => {
+          element.classList.remove("drag-over");
+        });
+        item.classList.add("drag-over");
+      });
+
+      item.addEventListener("dragleave", (event) => {
+        if (!item.contains(event.relatedTarget)) {
+          item.classList.remove("drag-over");
+        }
+      });
+
+      item.addEventListener("drop", (event) => {
+        event.preventDefault();
+        const fromIndex = Number(event.dataTransfer.getData("text/plain"));
+        if (!Number.isInteger(fromIndex) || fromIndex === index || fromIndex < 0 || fromIndex >= projects.length) {
+          item.classList.remove("drag-over");
+          return;
+        }
+        const [moved] = projects.splice(fromIndex, 1);
+        projects.splice(index, 0, moved);
+        markDirty();
+        renderProjects();
+        renderPreview();
+      });
+
+
+      list.appendChild(item);'''
+          if old_after_delete not in admin_text:
+              raise SystemExit("admin.js: project insertion anchor not found")
+          admin_text = admin_text.replace(old_after_delete, new_after_delete, 1)
+
+          old_project_default = '''          github: "",
+          icon: "PR",
+          featured: false,
+          enabled: true'''
+          new_project_default = '''          github: "",
+          icon: "PR",
+          color: "#ffffff",
+          featured: false,
+          enabled: true'''
+          if old_project_default not in admin_text:
+              raise SystemExit("admin.js: project default anchor not found")
+          admin_text = admin_text.replace(old_project_default, new_project_default, 1)
+
+          main_anchor = '''  return `
+
+    <article
+      class="
+        project-card
+        ${
+          project.featured
+            ? "project-featured"
+            : ""
+        }
+      "
+    >'''
+          main_replacement = '''  const projectColor =
+    /^#[0-9a-fA-F]{6}$/.test(String(project.color || ""))
+      ? project.color
+      : "#ffffff";
+
+  return `
+
+    <article
+      class="
+        project-card
+        ${
+          project.featured
+            ? "project-featured"
+            : ""
+        }
+      "
+      style="--project-color: ${escapeHtml(projectColor)};"
+    >'''
+          if main_anchor not in main_text:
+              raise SystemExit("main.js: project card anchor not found")
+          main_text = main_text.replace(main_anchor, main_replacement, 1)
+
+          css_marker = "/* PROJECT EDITOR DND + COLORS */"
+          css_block = '''\n\n/* PROJECT EDITOR DND + COLORS */\n.project-editor-item {\n  position: relative;\n  transition: transform .16s ease, opacity .16s ease, border-color .16s ease, background .16s ease;\n}\n.project-editor-item[draggable="true"] {\n  cursor: grab;\n}\n.project-editor-item.dragging {\n  opacity: .45;\n}\n.project-editor-item.drag-over {\n  border-color: #222b35;\n  transform: translateY(-2px);\n  background: #f7f9fb;\n}\n.project-drag-handle {\n  cursor: grab;\n  user-select: none;\n}\n.project-color-control {\n  display: flex;\n  align-items: center;\n}\n.project-color-swatch {\n  width: 26px;\n  height: 26px;\n  padding: 0;\n  border: 1px solid rgba(0,0,0,.14);\n  border-radius: 50%;\n  cursor: pointer;\n  box-shadow: inset 0 0 0 2px rgba(255,255,255,.7);\n}\n.project-color-input {\n  position: absolute;\n  width: 1px;\n  height: 1px;\n  opacity: 0;\n  pointer-events: none;\n}\n'''
+          if css_marker not in css_text:
+              css_text += css_block
+
+          admin.write_text(admin_text, encoding="utf-8")
+          main.write_text(main_text, encoding="utf-8")
+          css.write_text(css_text, encoding="utf-8")
+
+          workflow.unlink(missing_ok=True)
+
+      - name: Commit and push
+        shell: bash
+        run: |
+          git config user.name "maru-project-ui-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add admin/admin.js admin/admin.css main.js .github/workflows/temp-project-ui-fix.yml
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Add project card colors and drag sorting"
+          git push origin HEAD:main
