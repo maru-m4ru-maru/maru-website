@@ -165,7 +165,7 @@
       "id": "section-stats",
       "type": "stats",
       "title": "統計",
-      "enabled": true
+      "enabled": false
     },
     {
       "id": "section-projects",
