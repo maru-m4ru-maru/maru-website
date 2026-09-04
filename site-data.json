@@ -81,7 +81,8 @@
       "github": "https://github.com/maru-m4ru-maru/maru-addons",
       "icon": "MA",
       "featured": true,
-      "enabled": true
+      "enabled": true,
+      "color": "#ffe1ad"
     },
     {
       "id": "project-mtjk7icb-z0k7z3",
@@ -96,7 +97,8 @@
       "github": "https://github.com/maru-m4ru-maru/Scratch-project-analyzer",
       "icon": "MA",
       "featured": false,
-      "enabled": true
+      "enabled": true,
+      "color": "#242899"
     },
     {
       "id": "project-mtnh6p3u-i31o0z",
@@ -112,7 +114,8 @@
       "github": "https://github.com/maru-m4ru-maru/code-nest",
       "icon": "MA",
       "featured": true,
-      "enabled": true
+      "enabled": true,
+      "color": "#468a9b"
     }
   ],
   "updates": [
