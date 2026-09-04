@@ -120,6 +120,15 @@
   ],
   "updates": [
     {
+      "id": "update-mtni0t2a-ycijvx",
+      "project": "Code Nest",
+      "title": "新しいアプリを追加しました",
+      "description": "詳しくは\nProjects→Code Nest→Open\nから確認してね☆",
+      "version": "β版",
+      "date": "2026.09.04",
+      "enabled": true
+    },
+    {
       "id": "update-mtjkqnqn-71gqx2",
       "project": "Scratch Analyzer",
       "title": "Projectsに追加しました",
