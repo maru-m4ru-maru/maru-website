@@ -97,7 +97,7 @@
       "url": "https://maru-m4ru-maru.github.io/maru-addons/",
       "github": "https://github.com/maru-m4ru-maru/maru-addons",
       "icon": "MA",
-      "featured": true,
+      "featured": false,
       "enabled": true,
       "color": "#ffe1ad"
     },
