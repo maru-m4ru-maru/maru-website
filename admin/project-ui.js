@@ -10,13 +10,25 @@
     return validColor(project?.color) ? project.color : "#ffffff";
   }
 
+  function openColorPicker(input) {
+    try {
+      if (typeof input.showPicker === "function") {
+        input.showPicker();
+        return;
+      }
+    } catch (_) {
+      // Fall back to the normal input click below.
+    }
+    input.click();
+  }
+
   function renderProjectList() {
     const projects = getArray("projects");
 
     pageContent.innerHTML = `
       <div class="page-heading">
         <h2>プロジェクト</h2>
-        <p>プロジェクトカードを追加・編集できます。色の変更とドラッグでの並べ替えに対応しています。</p>
+        <p>プロジェクトカードを追加・編集できます。カードをクリックして色を変更、ドラッグして順番を変更できます。</p>
       </div>
       <div class="card">
         <div class="card-header">
@@ -41,10 +53,8 @@
       item.style.setProperty("--project-editor-color", color);
       item.innerHTML = `
         <div class="drag-handle project-drag-handle" title="ドラッグして並べ替え">☰</div>
-        <div class="project-color-control" title="カードの色を変更">
-          <button class="project-color-swatch" type="button" style="background:${escapeHtml(color)}" aria-label="カードの色を変更"></button>
-          <input class="project-color-input" type="color" value="${escapeHtml(color)}" tabindex="-1" aria-label="カードの色">
-        </div>
+        <button class="project-color-swatch" type="button" style="background:${escapeHtml(color)}" aria-label="${escapeHtml(project.title || "プロジェクト")} の色を変更" title="クリックで色変更"></button>
+        <input class="project-color-input" type="color" value="${escapeHtml(color)}" tabindex="-1" aria-hidden="true">
         <div class="item-main">
           <strong>${escapeHtml(project.title || "無題のプロジェクト")}</strong>
           <span>${escapeHtml(project.status || "ステータス未設定")}</span>
@@ -72,11 +82,12 @@
       colorSwatch.addEventListener("click", (event) => {
         event.preventDefault();
         event.stopPropagation();
-        if (typeof colorInput.showPicker === "function") {
-          colorInput.showPicker();
-        } else {
-          colorInput.click();
-        }
+        openColorPicker(colorInput);
+      });
+
+      item.addEventListener("click", (event) => {
+        if (event.target.closest("button, input, textarea, select, a")) return;
+        openColorPicker(colorInput);
       });
 
       colorInput.addEventListener("input", (event) => {
