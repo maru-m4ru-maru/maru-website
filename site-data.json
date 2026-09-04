@@ -85,22 +85,6 @@
       "color": "#ffe1ad"
     },
     {
-      "id": "project-mtjk7icb-z0k7z3",
-      "title": "Scratch Project Analyzer",
-      "description": "Scratchのプロジェクトのファイル、JSON、プロジェクトIDを入力すると、そのコードを読み取り、ジャンルと使われているブロックをランキングにして表示します✨️",
-      "status": "ONLINE",
-      "tags": [
-        "Tools",
-        "Scratch"
-      ],
-      "url": "https://maru-m4ru-maru.github.io/Scratch-project-analyzer/",
-      "github": "https://github.com/maru-m4ru-maru/Scratch-project-analyzer",
-      "icon": "MA",
-      "featured": false,
-      "enabled": true,
-      "color": "#242899"
-    },
-    {
       "id": "project-mtnh6p3u-i31o0z",
       "title": "Code Nest",
       "description": "Webサイトやツールを自由に制作できる、プログラミング環境です。作った作品はプレビューで見ることができ、共有することもできます。",
@@ -116,6 +100,22 @@
       "featured": true,
       "enabled": true,
       "color": "#468a9b"
+    },
+    {
+      "id": "project-mtjk7icb-z0k7z3",
+      "title": "Scratch Project Analyzer",
+      "description": "Scratchのプロジェクトのファイル、JSON、プロジェクトIDを入力すると、そのコードを読み取り、ジャンルと使われているブロックをランキングにして表示します✨️",
+      "status": "ONLINE",
+      "tags": [
+        "Tools",
+        "Scratch"
+      ],
+      "url": "https://maru-m4ru-maru.github.io/Scratch-project-analyzer/",
+      "github": "https://github.com/maru-m4ru-maru/Scratch-project-analyzer",
+      "icon": "MA",
+      "featured": false,
+      "enabled": true,
+      "color": "#242899"
     }
   ],
   "updates": [
