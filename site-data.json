@@ -77,7 +77,7 @@
         "web",
         "ツール"
       ],
-      "url": "https://maru-m4ru-maru.github.io/code-nest/index.html",
+      "url": "https://maru-m4ru-maru.github.io/code-nest/",
       "github": "https://github.com/maru-m4ru-maru/code-nest",
       "icon": "MA",
       "featured": true,
@@ -99,7 +99,7 @@
       "icon": "MA",
       "featured": false,
       "enabled": true,
-      "color": "#ffe1ad"
+      "color": "#e8cea1"
     },
     {
       "id": "project-mtjk7icb-z0k7z3",
