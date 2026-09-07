@@ -1013,7 +1013,7 @@ function renderUpdates(section) {
                     </h3>
 
 
-                    <p>
+                    <p class="update-description">
                       ${escapeHtml(
                         update.description ||
                         ""
