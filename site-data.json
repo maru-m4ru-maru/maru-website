@@ -144,7 +144,7 @@
     {
       "id": "section-hero",
       "type": "hero",
-      "title": "にゃんこ",
+      "title": "こんにちは！",
       "description": "maru_m4ru_maru が制作しているツール・サービス・プロジェクトを紹介しています。",
       "enabled": true,
       "titleStyle": {
