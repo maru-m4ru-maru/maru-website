@@ -114,7 +114,7 @@
       "github": "https://github.com/maru-m4ru-maru/Scratch-project-analyzer",
       "icon": "MA",
       "featured": false,
-      "enabled": true,
+      "enabled": false,
       "color": "#242899"
     }
   ],
